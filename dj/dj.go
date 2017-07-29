@@ -79,7 +79,7 @@ func load() {
 			continue
 		}
 
-		r := regexp.MustCompile(`^([a-zA-Z]+)___([\d]+)___([\s\S]+)\.mp3$`)
+		r := regexp.MustCompile(`^([a-zA-Z#]+)___([\d]+)___([\s\S]+)\.mp3$`)
 
 		s := r.FindStringSubmatch(file.Name())
 		if len(s) > 0 {
@@ -120,7 +120,7 @@ func Random() (string, string) {
 		return "Playlist is empty:(", ""
 	}
 
-	n := r.Intn(l - 1)
+	n := r.Intn(l)
 
 	t := tracks[n]
 
@@ -138,7 +138,7 @@ func RandomKey(key string) (string, string) {
 		return "Playlist is empty:(", ""
 	}
 
-	n := r.Intn(l - 1)
+	n := r.Intn(l)
 
 	t := tracksByKey[key][n]
 

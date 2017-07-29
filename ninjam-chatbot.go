@@ -125,7 +125,7 @@ f:
 					}
 				}()
 			case models.MSG:
-				r := regexp.MustCompile(`^dj\s+(\w+)\s*([a-zA-Z]{0,3})`)
+				r := regexp.MustCompile(`^dj\s+(\w+)\s*([a-zA-Z#]{0,3})`)
 				s := r.FindStringSubmatch(msg.Message.Text)
 
 				command := ""
