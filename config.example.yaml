@@ -1,0 +1,14 @@
+app_name: ninjam-dj-bot
+log_file: stdout
+log_level: debug
+daemon: false
+server:
+  host: guitar-jam.ru
+  port: 2051
+  anonymous: true
+  user_name: dj
+  user_password:
+player:
+  dir:
+  command: mpg321
+  args: -o pulse

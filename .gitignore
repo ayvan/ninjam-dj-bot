@@ -1,0 +1,6 @@
+.idea
+ninjam-dj-bot
+*.log
+logs
+config.yaml
+app.pid
