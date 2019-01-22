@@ -20,6 +20,8 @@ func Run(hostAndPort string) {
 	routes := Echo.Group("/v1")
 
 	routes.GET("/tracks", Tracks)
+	routes.POST("/tracks/", PostTrack)
+	routes.PUT("/tracks/:id", PutTrack)
 	routes.GET("/test", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "ok"})
 	})

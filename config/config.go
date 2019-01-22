@@ -16,6 +16,7 @@ type AppConfig struct {
 	AppConfigPath string
 	AppPidPath    string
 	HTTPPort      string       `yaml:"http_port"`
+	TracksDir     string       `yaml:"tracks_dir"`
 	DBFile        string       `yaml:"db_file"`
 	DaemonMode    bool         `yaml:"daemon"`
 	AppName       string       `yaml:"app_name"`

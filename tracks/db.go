@@ -6,11 +6,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var dbCache = make(map[uint]*Track)
+var dbCacheID = make(map[uint]*Track)
 var db *gorm.DB
 
-func CloseDB() {
+func DBClose() {
 	db.Close()
+}
+
+func DB() *gorm.DB {
+	return db
 }
 
 func Init(file string) {
@@ -42,27 +46,34 @@ func LoadCache() {
 	}
 
 	for _, t := range tracks {
-		dbCache[t.ID] = t
+		dbCacheID[t.ID] = t
 	}
 }
 
-func GetTracks() (res []*Track) {
-	for _, track := range dbCache {
-		res = append(res, track)
-	}
-
+func Tags() (tags []*Tag, err error) {
+	tags = []*Tag{}
+	err = db.Find(&tags).Error
 	return
 }
 
-func GetTrack(id uint) *Track {
-	return dbCache[id]
+func Tracks() (tracks []*Track, err error) {
+	tracks = []*Track{}
+	err = db.Preload("Tags").Find(&tracks).Error
+	return
 }
 
-func GetTags() []Tag {
-	tags := []Tag{}
-	if err := db.Find(&tags).Error; err != nil {
-		logrus.Errorf("db.Find error in GetTags: %s", err)
+func TrackFromCache(id uint) *Track {
+	return dbCacheID[id]
+}
+
+func TrackByPath(path string) (res *Track, err error) {
+	track := &Track{}
+	dbRes := db.Preload("Tags").First(&track, "file_path", "path")
+	if dbRes.RecordNotFound() || dbRes.Error != nil {
+		return
 	}
 
-	return tags
+	res = track
+
+	return
 }

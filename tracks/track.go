@@ -6,7 +6,7 @@ import (
 
 type Track struct {
 	gorm.Model
-	FileName string `json:"file_name"`
+	FilePath string `json:"file_path"`
 
 	Title            string `json:"title"`
 	Artist           string `json:"artist"`
