@@ -2,8 +2,8 @@ package config
 
 import (
 	"flag"
-	"github.com/Sirupsen/logrus"
 	"github.com/luci/go-render/render"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -15,6 +15,8 @@ type AppConfig struct {
 	AppPath       string
 	AppConfigPath string
 	AppPidPath    string
+	HTTPPort      string       `yaml:"http_port"`
+	DBFile        string       `yaml:"db_file"`
 	DaemonMode    bool         `yaml:"daemon"`
 	AppName       string       `yaml:"app_name"`
 	LogFile       string       `yaml:"log_file"`
@@ -64,6 +66,9 @@ func init() {
 		}
 	}
 
+	if appConfig.HTTPPort == "" {
+		appConfig.HTTPPort = "8080"
+	}
 	appConfig.DaemonMode = false
 	appConfig.AppName = "ninjam-dj-bot"
 	appConfig.LogFile = "stdout"

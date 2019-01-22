@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/Ayvan/ninjam-chatbot/models"
 	"github.com/Ayvan/ninjam-chatbot/ninjam-bot"
+	"github.com/Ayvan/ninjam-dj-bot/api"
 	"github.com/Ayvan/ninjam-dj-bot/config"
 	"github.com/Ayvan/ninjam-dj-bot/dj"
-	"github.com/Sirupsen/logrus"
+	"github.com/Ayvan/ninjam-dj-bot/tracks"
 	"github.com/VividCortex/godaemon"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -25,6 +27,11 @@ func main() {
 	if config.Get().DaemonMode {
 		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	}
+
+	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
+
+	tracks.Init(config.Get().DBFile)
+	tracks.LoadCache()
 
 	pidFile := config.Get().AppPidPath
 
@@ -54,6 +61,19 @@ func main() {
 	server := config.Get().Server
 
 	bot := ninjam_bot.NewNinJamBot(server.Host, server.Port, server.UserName, server.UserPassword, server.Anonymous)
+
+	jp := dj.NewJamPlayer(bot)
+
+	go func() {
+		bpm := uint(141)
+		jp.SetBPM(bpm)
+		jp.SetBPI(4)
+		jp.SetMP3Source("test.mp3")
+		bot.ChannelInit()
+		msg := fmt.Sprintf("bpm %d", bpm)
+		bot.SendAdminMessage(msg)
+		jp.Start()
+	}()
 
 	// инициализируем глобальный канал завершения горутин
 	sigChan := make(chan bool, 1)

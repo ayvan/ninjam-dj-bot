@@ -1,6 +1,8 @@
 app_name: ninjam-dj-bot
 log_file: stdout
 log_level: debug
+http_port: 8080
+db_file: ./tracks/tracks.db
 daemon: false
 server:
   host: guitar-jam.ru

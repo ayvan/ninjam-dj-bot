@@ -3,7 +3,7 @@ package dj
 import (
 	"fmt"
 	"github.com/Ayvan/ninjam-dj-bot/config"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"os"
