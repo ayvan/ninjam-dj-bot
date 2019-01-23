@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// channels всегда 2 т.к. используемый MP3-декодер всегда отдаёт звук в стерео
+const channels = 2
+
 type IntervalBeginWriter interface {
 	IntervalBegin(guid [16]byte, channelIndex uint8)
 	IntervalWrite(guid [16]byte, data []byte, flags uint8)
@@ -86,8 +89,8 @@ func (jp *JamPlayer) Start() error {
 
 	jp.stop = make(chan bool, 1)
 
-	intervalTime := (time.Minute / time.Duration(jp.bpm)) * time.Duration(jp.bpi)
-	samples := (jp.sampleRate * 2) * int(intervalTime/time.Second)
+	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
+	samples := int(float64(jp.sampleRate)*intervalTime/float64(time.Second)) * channels
 
 	jp.playing = true
 
@@ -100,7 +103,7 @@ func (jp *JamPlayer) Start() error {
 			jp.playing = false
 		}()
 
-		ticker := time.NewTicker(intervalTime)
+		ticker := time.NewTicker(time.Duration(intervalTime))
 
 		oggEncoder := ninjamencoder.NewEncoder()
 		oggEncoder.SampleRate = jp.sampleRate
@@ -116,9 +119,16 @@ func (jp *JamPlayer) Start() error {
 				return
 			}
 
-			data := oggEncoder.EncodeNinjamInterval(buf.(audio.Float32))
+			deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32), channels)
+			if err != nil {
+				logrus.Errorf("DeinterleaveSamples error: %s", err)
+			}
 
-			return
+			data, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
+			if err != nil {
+				logrus.Errorf("EncodeNinjamInterval error: %s", err)
+			}
+
 			guid, _ := uuid.NewV1()
 
 			select {
