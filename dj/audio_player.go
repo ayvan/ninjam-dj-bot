@@ -90,7 +90,7 @@ func (jp *JamPlayer) Start() error {
 	jp.stop = make(chan bool, 1)
 
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
-	samples := int(float64(jp.sampleRate)*intervalTime/float64(time.Second)) * channels
+	samples := int(math.Ceil(float64(jp.sampleRate)*intervalTime/float64(time.Second))) * channels
 
 	jp.playing = true
 
@@ -122,11 +122,13 @@ func (jp *JamPlayer) Start() error {
 			deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32), channels)
 			if err != nil {
 				logrus.Errorf("DeinterleaveSamples error: %s", err)
+				return
 			}
 
 			data, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
 			if err != nil {
 				logrus.Errorf("EncodeNinjamInterval error: %s", err)
+				return
 			}
 
 			guid, _ := uuid.NewV1()
@@ -179,7 +181,7 @@ func (ai *AudioInterval) Next() (data []byte, hasNext bool) {
 		data = ai.Data[ai.index]
 		ai.index++
 	}
-	if len(ai.Data) <= ai.index+1 {
+	if len(ai.Data) < ai.index+1 {
 		hasNext = false
 	}
 
@@ -202,13 +204,13 @@ func toReadSeeker(reader io.Reader) (res audio.ReadSeeker, err error) {
 			return
 		}
 
-		uintData := binary.LittleEndian.Uint16(data)
-		buf.Write(audio.Float32{Uint16ToFloat32(uintData)})
+		intData := int16(binary.LittleEndian.Uint16(data))
+		buf.Write(audio.Float32{Int16ToFloat32(intData)})
 	}
 
 	return
 }
 
-func Uint16ToFloat32(s uint16) float32 {
-	return float32(s)/float32(math.MaxInt16) - 1
+func Int16ToFloat32(s int16) float32 {
+	return float32(s) / float32(math.MaxInt16)
 }
