@@ -69,6 +69,8 @@ func main() {
 		jp.SetBPM(bpm)
 		jp.SetBPI(4)
 		jp.SetMP3Source("test.mp3")
+		time.Sleep(time.Second)
+		bot.WaitAuth()
 		bot.ChannelInit()
 		msg := fmt.Sprintf("bpm %d", bpm)
 		bot.SendAdminMessage(msg)
