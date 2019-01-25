@@ -28,7 +28,7 @@ func Walk(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func ProcessMP3Track(path string) (track *tracks.Track, err error) {
+func analyzeMP3Track(path string) (track *tracks.Track, err error) {
 	// сделаем путь файла относительным, от текущей директории
 	relativePath := strings.TrimLeft(strings.TrimPrefix(path, dir), "/")
 	logrus.Infof("%s", relativePath)
@@ -56,6 +56,30 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 		AlbumTrackNumber: uint(trackNumber),
 
 		// TODO извлечь прочие данные из тегов
+	}
+
+	frames := tag.GetFrames("PRIV")
+
+	for _, frame := range frames {
+		f, ok := frame.(id3v2.UnknownFrame)
+		if ok {
+			frameStruct := private_ext_frame_data{}
+			_, data := getFrameNameAndData(f.Body)
+			frameStruct.Unmarshal(data)
+
+			fmt.Printf("%x %v\n", frameStruct.magic, frameStruct)
+		}
+	}
+
+	return
+}
+
+func ProcessMP3Track(path string) (track *tracks.Track, err error) {
+	track, err = analyzeMP3Track(path)
+	if err != nil {
+		err = fmt.Errorf("analyzeMP3Track for %s: %s", path, err)
+		logrus.Error(err)
+		return
 	}
 
 	// проверяем, есть ли уже трек в базе
