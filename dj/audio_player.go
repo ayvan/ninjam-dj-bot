@@ -276,5 +276,5 @@ func toReadSeeker(reader io.Reader, samples int) (res audio.ReadSeeker, err erro
 }
 
 func Int16ToFloat32(s int16) float32 {
-	return float32(s) / float32(math.MaxInt16)
+	return float32(s) / float32(math.MaxInt16+1)
 }
