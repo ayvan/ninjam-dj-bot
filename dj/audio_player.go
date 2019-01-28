@@ -96,15 +96,13 @@ func (jp *JamPlayer) Start() error {
 	_ = repeats
 
 	// посчитаем на каких сэмплах у нас начало, и на каких конец зацикливания
-	start := time.Second * 10
-	startTime := float64(start) / float64(time.Second)
-	startSamples := int(math.Ceil(float64(jp.sampleRate)*startTime)) * channels
-	_ = startSamples
+	startTime := 1827878 * time.Microsecond
+	loopStartPos := timeToSamples(startTime, jp.sampleRate)
+	_ = loopStartPos
 
-	end := time.Second * 20
-	endTime := float64(end) / float64(time.Second)
-	endSamples := int(math.Ceil(float64(jp.sampleRate)*endTime)) * channels
-	_ = endSamples
+	endTime := 16373318 * time.Microsecond
+	loopEndPos := timeToSamples(endTime, jp.sampleRate)
+	_ = loopEndPos
 
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
@@ -178,18 +176,41 @@ func (jp *JamPlayer) Start() error {
 		play := true
 		currentPos := 0
 
+		loops := 1000
+		_ = loops
+
 		for play {
 			deinterleavedSamples := make([][]float32, 2)
 			endPos := currentPos + intervalSamples
+			fmt.Println(loopStartPos, loopEndPos, currentPos, endPos)
 			if endPos > len(samplesBuffer[0]) {
 				endPos = len(samplesBuffer[0])
 				play = false // дошли до конца - завершаем
 			}
-			for i := 0; i < channels; i++ {
-				deinterleavedSamples[i] = samplesBuffer[i][currentPos:endPos]
-			}
 
-			currentPos = endPos
+			if currentPos >= loopStartPos && endPos >= loopEndPos && loops > 0 {
+				play = true // если ранее получили флаг остановки - значит снимем его, мы ушли в очередной цикл
+				samplesToIntervalEnd := endPos - loopEndPos
+				endPos = loopEndPos
+
+				for i := 0; i < channels; i++ {
+					// создаём новый слайс и копируем в него, т.к. дальше нам нужно с ним работать отдельно от кэшированного слайса - мы будем его менять через append
+					deinterleavedSamples[i] = make([]float32, endPos-currentPos, intervalSamples)
+					copy(deinterleavedSamples[i], samplesBuffer[i][currentPos:endPos])
+					deinterleavedSamples[i] = append(deinterleavedSamples[i], samplesBuffer[i][loopStartPos:loopStartPos+samplesToIntervalEnd]...)
+				}
+
+				currentPos = loopStartPos + samplesToIntervalEnd
+
+				loops--
+				logrus.Debugf("loops left: %d", loops)
+			} else {
+				for i := 0; i < channels; i++ {
+					deinterleavedSamples[i] = samplesBuffer[i][currentPos:endPos]
+				}
+
+				currentPos = endPos
+			}
 
 			data, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
 			if err != nil {
@@ -277,4 +298,9 @@ func toReadSeeker(reader io.Reader, samples int) (res audio.ReadSeeker, err erro
 
 func Int16ToFloat32(s int16) float32 {
 	return float32(s) / float32(math.MaxInt16+1)
+}
+
+func timeToSamples(t time.Duration, sampleRate int) int {
+	return int(math.Ceil(float64(sampleRate) * float64(t) / float64(time.Second)))
+
 }

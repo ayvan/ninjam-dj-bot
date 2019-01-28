@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/Ayvan/ninjam-dj-bot/config"
 	"github.com/Ayvan/ninjam-dj-bot/helpers"
-	"github.com/Ayvan/ninjam-dj-bot/sync"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/labstack/echo"
 	"io"
 	"net/http"
@@ -83,7 +83,7 @@ func PostTrack(ctx echo.Context) error {
 		return err
 	}
 
-	track, err := sync.ProcessMP3Track(filePath)
+	track, err := tracks_sync.ProcessMP3Track(filePath)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}

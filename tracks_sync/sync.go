@@ -1,9 +1,10 @@
-package sync
+package tracks_sync
 
 import (
 	"fmt"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
 	"github.com/bogem/id3v2"
+	"github.com/burillo-se/bs1770wrap"
 	"github.com/sirupsen/logrus"
 	"os"
 	"regexp"
@@ -28,7 +29,7 @@ func Walk(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func analyzeMP3Track(path string) (track *tracks.Track, err error) {
+func AnalyzeMP3Track(path string) (track *tracks.Track, err error) {
 	// сделаем путь файла относительным, от текущей директории
 	relativePath := strings.TrimLeft(strings.TrimPrefix(path, dir), "/")
 	logrus.Infof("%s", relativePath)
@@ -39,9 +40,6 @@ func analyzeMP3Track(path string) (track *tracks.Track, err error) {
 		logrus.Error(err)
 		return
 	}
-	fmt.Println(string(tag.Version()))
-
-	getReplayGain(tag)
 
 	var trackNumber int
 	num := strings.Trim(tag.GetTextFrame(tag.CommonID("Track number/Position in set")).Text, "\x00")
@@ -54,8 +52,6 @@ func analyzeMP3Track(path string) (track *tracks.Track, err error) {
 		Artist:           tag.Artist(),
 		Album:            tag.Album(),
 		AlbumTrackNumber: uint(trackNumber),
-
-		// TODO извлечь прочие данные из тегов
 	}
 
 	frames := tag.GetFrames("PRIV")
@@ -67,17 +63,43 @@ func analyzeMP3Track(path string) (track *tracks.Track, err error) {
 			_, data := getFrameNameAndData(f.Body)
 			frameStruct.Unmarshal(data)
 
-			fmt.Printf("%x %v\n", frameStruct.magic, frameStruct)
+			if frameStruct.version != 2 {
+				err = fmt.Errorf("bad tag version: %d", frameStruct.version)
+				logrus.Error(err)
+				return
+			}
+
+			trackData := frameStruct.data
+
+			track.Key = uint(trackData.key)
+			track.Mode = uint(trackData.mode)
+			track.BPM = uint(trackData.bpm)
+			track.BPI = uint(trackData.bpi)
+			track.LoopStart = uint64(trackData.ls)
+			track.LoopEnd = uint64(trackData.le)
+
 		}
 	}
+
+	loudnessData, err := bs1770wrap.CalculateLoudness(path)
+	if err != nil {
+		err = fmt.Errorf("bs1770wrap.CalculateLoudness: %s", err)
+		logrus.Error(err)
+		return
+	}
+
+	track.Loudness = loudnessData.IntegratedLoudness
+	track.LoudnessPeak = loudnessData.TruePeak
+	track.LoudnessRange = loudnessData.LoudnessRange
+	track.Length = loudnessData.Length
 
 	return
 }
 
 func ProcessMP3Track(path string) (track *tracks.Track, err error) {
-	track, err = analyzeMP3Track(path)
+	track, err = AnalyzeMP3Track(path)
 	if err != nil {
-		err = fmt.Errorf("analyzeMP3Track for %s: %s", path, err)
+		err = fmt.Errorf("AnalyzeMP3Track for %s: %s", path, err)
 		logrus.Error(err)
 		return
 	}
@@ -98,16 +120,4 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 	}
 
 	return
-}
-
-func getReplayGain(tag *id3v2.Tag) {
-	frames := tag.GetFrames("TXXX")
-
-	for _, frame := range frames {
-		frameData, ok := frame.(id3v2.UserDefinedTextFrame)
-		if !ok {
-			continue
-		}
-		fmt.Println(frameData.Description, frameData.Value)
-	}
 }

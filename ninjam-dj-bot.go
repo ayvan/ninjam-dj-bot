@@ -8,6 +8,7 @@ import (
 	"github.com/Ayvan/ninjam-dj-bot/config"
 	"github.com/Ayvan/ninjam-dj-bot/dj"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/VividCortex/godaemon"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -65,14 +66,18 @@ func main() {
 	jp := dj.NewJamPlayer(bot)
 
 	go func() {
-		bpm := uint(141)
-		jp.SetBPM(bpm)
-		jp.SetBPI(4)
-		jp.SetMP3Source("test.mp3")
+		jp.SetMP3Source("DrumLoop.mp3")
+		track, _ := tracks_sync.AnalyzeMP3Track("DrumLoop.mp3")
+
+		jp.SetBPM(track.BPM)
+		jp.SetBPI(track.BPI)
+
 		time.Sleep(time.Second)
 		bot.WaitAuth()
 		bot.ChannelInit()
-		msg := fmt.Sprintf("bpm %d", bpm)
+		msg := fmt.Sprintf("bpm %d", track.BPM)
+		bot.SendAdminMessage(msg)
+		msg = fmt.Sprintf("bpi %d", track.BPI)
 		bot.SendAdminMessage(msg)
 		jp.Start()
 	}()

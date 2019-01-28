@@ -1,9 +1,9 @@
-package sync
+package tracks_sync
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 )
 
 type private_ext_frame_data struct {

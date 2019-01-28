@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Ayvan/ninjam-dj-bot/sync"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/sirupsen/logrus"
 	"os"
 	"path"
@@ -26,9 +26,9 @@ func main() {
 	defer tracks.DBClose()
 	tracks.LoadCache()
 
-	sync.Init(dir)
+	tracks_sync.Init(dir)
 
-	if err = filepath.Walk(dir, sync.Walk); err != nil {
+	if err = filepath.Walk(dir, tracks_sync.Walk); err != nil {
 		logrus.Fatal(err)
 	}
 }
