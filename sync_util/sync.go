@@ -23,6 +23,7 @@ func main() {
 
 	// помещаем БД в директорию с треками
 	tracks.Init(path.Join(dir, "tracks.db"))
+	defer tracks.DBClose()
 	tracks.LoadCache()
 
 	sync.Init(dir)
@@ -30,6 +31,4 @@ func main() {
 	if err = filepath.Walk(dir, sync.Walk); err != nil {
 		logrus.Fatal(err)
 	}
-
-	defer tracks.DBClose()
 }
