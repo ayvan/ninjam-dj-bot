@@ -18,6 +18,7 @@ type AppConfig struct {
 	HTTPPort      string       `yaml:"http_port"`
 	TracksDir     string       `yaml:"tracks_dir"`
 	DBFile        string       `yaml:"db_file"`
+	LV2HostConfig string       `yaml:"lv2host_config"`
 	DaemonMode    bool         `yaml:"daemon"`
 	AppName       string       `yaml:"app_name"`
 	LogFile       string       `yaml:"log_file"`

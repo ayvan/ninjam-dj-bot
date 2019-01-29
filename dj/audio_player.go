@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
 	"github.com/azul3d/engine/audio"
+	"github.com/burillo-se/lv2host-go/lv2host"
+	"github.com/burillo-se/lv2hostconfig"
 	"github.com/burillo-se/ninjamencoder"
 	"github.com/hajimehoshi/go-mp3"
 	"github.com/satori/go.uuid"
@@ -36,6 +38,8 @@ type JamPlayer struct {
 	ninjamBot  IntervalBeginWriter
 	stop       chan bool
 	playing    bool
+	host       *lv2host.CLV2Host
+	hostConfig *lv2hostconfig.LV2HostConfig
 }
 
 type AudioInterval struct {
@@ -46,8 +50,8 @@ type AudioInterval struct {
 	index        int // index of current audio data block
 }
 
-func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter) *JamPlayer {
-	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1)}
+func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
+	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
 }
 
 func (jp *JamPlayer) Playing() bool {
@@ -74,6 +78,35 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 	jp.setBPM(track.BPM)
 	jp.setBPI(track.BPI)
 	jp.SetRepeats(0)
+
+	jp.hostConfig.ValueMap["reference"] = -14
+	jp.hostConfig.ValueMap["loudness"] = track.Loudness
+	jp.hostConfig.ValueMap["loudnessRange"] = track.LoudnessRange
+	jp.hostConfig.ValueMap["loudnessPeak"] = track.LoudnessPeak
+	err = jp.hostConfig.Evaluate()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	// initialize LV2 plugins
+	jp.host = lv2host.Alloc(float64(jp.sampleRate))
+
+	for i, p := range jp.hostConfig.Plugins {
+		if lv2host.AddPluginInstance(jp.host, p.PluginURI) != 0 {
+			logrus.Errorf("Cannot add plugin: %v\n", p.PluginURI)
+			return
+		}
+		for param, val := range p.Data {
+			if lv2host.SetPluginParameter(jp.host, uint32(i), param, val) != 0 {
+				logrus.Errorf("Cannot set plugin parameter: %v\n", param)
+				lv2host.ListPluginParameters(jp.host, uint32(i))
+				return
+			}
+			logrus.Debugf("Setting '%v' to '%v'\n", param, val)
+		}
+	}
+
+	lv2host.Activate(jp.host)
 }
 
 func (jp *JamPlayer) SetRepeats(repeats int) {
@@ -139,6 +172,8 @@ func (jp *JamPlayer) Start() error {
 	go func() {
 		intervalsReady := 0
 
+		defer lv2host.Free(jp.host)
+
 		for {
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
 			rs, err := toReadSeeker(jp.source, intervalSamplesChannels)
@@ -161,6 +196,8 @@ func (jp *JamPlayer) Start() error {
 				logrus.Errorf("DeinterleaveSamples error: %s", err)
 				return
 			}
+
+			lv2host.ProcessBuffer(jp.host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(intervalSamples))
 
 			for i := 0; i < channels; i++ {
 				samplesBuffer[i] = append(samplesBuffer[i], deinterleavedSamples[i]...)

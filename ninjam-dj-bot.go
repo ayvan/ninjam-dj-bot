@@ -10,6 +10,7 @@ import (
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
 	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/VividCortex/godaemon"
+	"github.com/burillo-se/lv2hostconfig"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -53,6 +54,11 @@ func main() {
 		}()
 	}
 
+	lv2hostConfigPath := config.Get().LV2HostConfig
+
+	hostconfig := lv2hostconfig.NewLV2HostConfig()
+	hostconfig.ReadFile(lv2hostConfigPath)
+
 	sChan := make(chan os.Signal, 1)
 	// ловим команды на завершение от ОС и корректно завершаем приложение с помощью sync.WaitGroup
 	signal.Notify(sChan,
@@ -70,15 +76,16 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	jp := dj.NewJamPlayer(dir, bot)
+	jp := dj.NewJamPlayer(dir, bot, hostconfig)
 
 	tracks_sync.Init(dir)
 	track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "DrumLoop.mp3"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
 	jp.LoadTrack(track)
-	jp.SetRepeats(5)
+	jp.SetRepeats(100)
 
 	bot.OnSuccessAuth(func() {
 		bot.ChannelInit("BackingTrack")

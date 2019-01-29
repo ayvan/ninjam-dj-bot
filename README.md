@@ -5,7 +5,7 @@ Install KX Studio: https://kxstudio.linuxaudio.org/Repositories
 Install dependencies
 ```
 sudo apt-get install libvorbis-dev sox libsox-fmt-mp3
-sudo apt-get install x42-plugins calf-plugins
+sudo apt-get install x42-plugins calf-plugins liblilv-dev
 ```
 
 Download and place to PATH (for exaple, copy to /usr/bin/):

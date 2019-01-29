@@ -4,6 +4,7 @@ log_level: debug
 http_port: 8080
 db_file: ./tracks/tracks.db
 tracks_dir: ./tracks
+lv2host_config: lv2host.yaml
 daemon: false
 server:
   host: guitar-jam.ru
