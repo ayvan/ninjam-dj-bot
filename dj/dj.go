@@ -23,7 +23,7 @@ type trackInfo struct {
 }
 
 var loadedFiles map[string]bool = make(map[string]bool)
-var tracks []*trackInfo = make([]*trackInfo, 0)
+var tracksSlice []*trackInfo = make([]*trackInfo, 0)
 var tracksByKey map[string][]*trackInfo = make(map[string][]*trackInfo)
 var sigChan chan bool = make(chan bool, 1)
 var stopPlayChan chan bool = make(chan bool, 1)
@@ -92,7 +92,7 @@ func load() {
 				FileName: path.Join(dir, file.Name()),
 			}
 
-			tracks = append(tracks, &ti)
+			tracksSlice = append(tracksSlice, &ti)
 			tracksByKey[ti.Key] = append(tracksByKey[ti.Key], &ti)
 		}
 	}
@@ -114,7 +114,7 @@ func stopMP3() {
 func Random() (string, string) {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 
-	l := len(tracks)
+	l := len(tracksSlice)
 
 	if l == 0 {
 		return "Playlist is empty:(", ""
@@ -122,7 +122,7 @@ func Random() (string, string) {
 
 	n := r.Intn(l)
 
-	t := tracks[n]
+	t := tracksSlice[n]
 
 	nextTrack(t)
 

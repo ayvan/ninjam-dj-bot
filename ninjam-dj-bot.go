@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -63,24 +65,30 @@ func main() {
 
 	bot := ninjam_bot.NewNinJamBot(server.Host, server.Port, server.UserName, server.UserPassword, server.Anonymous)
 
-	jp := dj.NewJamPlayer(bot)
+	dir, err := filepath.Abs(config.Get().TracksDir)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
-	go func() {
-		jp.SetMP3Source("DrumLoop.mp3")
-		track, _ := tracks_sync.AnalyzeMP3Track("DrumLoop.mp3")
+	jp := dj.NewJamPlayer(dir, bot)
 
-		jp.SetBPM(track.BPM)
-		jp.SetBPI(track.BPI)
+	tracks_sync.Init(dir)
+	track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "DrumLoop.mp3"))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	jp.LoadTrack(track)
+	jp.SetRepeats(5)
 
-		time.Sleep(time.Second)
-		bot.WaitAuth()
-		bot.ChannelInit()
+	bot.OnSuccessAuth(func() {
+		bot.ChannelInit("BackingTrack")
+
 		msg := fmt.Sprintf("bpm %d", track.BPM)
 		bot.SendAdminMessage(msg)
 		msg = fmt.Sprintf("bpi %d", track.BPI)
 		bot.SendAdminMessage(msg)
 		jp.Start()
-	}()
+	})
 
 	// инициализируем глобальный канал завершения горутин
 	sigChan := make(chan bool, 1)

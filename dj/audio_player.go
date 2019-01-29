@@ -3,6 +3,7 @@ package dj
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/Ayvan/ninjam-dj-bot/tracks"
 	"github.com/azul3d/engine/audio"
 	"github.com/burillo-se/ninjamencoder"
 	"github.com/hajimehoshi/go-mp3"
@@ -11,6 +12,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"runtime/debug"
 	"time"
 )
@@ -24,10 +26,13 @@ type IntervalBeginWriter interface {
 }
 
 type JamPlayer struct {
+	track      *tracks.Track
+	tracksPath string
 	source     io.Reader
 	sampleRate int
 	bpm        uint
 	bpi        uint
+	repeats    int
 	ninjamBot  IntervalBeginWriter
 	stop       chan bool
 	playing    bool
@@ -41,28 +46,46 @@ type AudioInterval struct {
 	index        int // index of current audio data block
 }
 
-func NewJamPlayer(ninjamBot IntervalBeginWriter) *JamPlayer {
-	return &JamPlayer{ninjamBot: ninjamBot, stop: make(chan bool, 1)}
+func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter) *JamPlayer {
+	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1)}
 }
 
 func (jp *JamPlayer) Playing() bool {
 	return jp.playing
 }
 
-func (jp *JamPlayer) SetBPM(bpm uint) {
-	jp.bpm = bpm
+func (jp *JamPlayer) Track() *tracks.Track {
+	return jp.track
 }
 
-func (jp *JamPlayer) SetBPI(bpi uint) {
-	jp.bpi = bpi
+func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
+	jp.track = track
+	filePath := track.FilePath
+
+	if !path.IsAbs(filePath) {
+		filePath = path.Join(jp.tracksPath, filePath)
+	}
+
+	err := jp.setMP3Source(filePath)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	jp.setBPM(track.BPM)
+	jp.setBPI(track.BPI)
+	jp.SetRepeats(0)
 }
 
-func (jp *JamPlayer) SetMP3Source(source string) error {
+func (jp *JamPlayer) SetRepeats(repeats int) {
+	jp.repeats = repeats
+}
+
+func (jp *JamPlayer) setMP3Source(source string) error {
 	jp.Stop() // stop before set new source
 
 	out, err := os.OpenFile(source, os.O_RDONLY, 0664)
 	if err != nil {
-		return fmt.Errorf("SetMP3Source error: %s", err)
+		return fmt.Errorf("setMP3Source error: %s", err)
 	}
 
 	decoder, err := mp3.NewDecoder(out)
@@ -72,16 +95,17 @@ func (jp *JamPlayer) SetMP3Source(source string) error {
 
 	jp.source = decoder
 
-	//jp.source, err = toReadSeeker(decoder)
-	//if err != nil {
-	//	err = fmt.Errorf("toReadSeeker error: %s", err)
-	//	logrus.Error(err)
-	//	fmt.Println(err)
-	//}
-
 	jp.sampleRate = decoder.SampleRate()
 
 	return nil
+}
+
+func (jp *JamPlayer) setBPM(bpm uint) {
+	jp.bpm = bpm
+}
+
+func (jp *JamPlayer) setBPI(bpi uint) {
+	jp.bpi = bpi
 }
 
 func (jp *JamPlayer) Start() error {
@@ -92,21 +116,16 @@ func (jp *JamPlayer) Start() error {
 
 	jp.stop = make(chan bool, 1)
 
-	repeats := 5
-	_ = repeats
-
 	// посчитаем на каких сэмплах у нас начало, и на каких конец зацикливания
-	startTime := 1827878 * time.Microsecond
+	startTime := time.Duration(jp.track.LoopStart) * time.Microsecond
 	loopStartPos := timeToSamples(startTime, jp.sampleRate)
-	_ = loopStartPos
 
-	endTime := 16373318 * time.Microsecond
+	endTime := time.Duration(jp.track.LoopEnd) * time.Microsecond
 	loopEndPos := timeToSamples(endTime, jp.sampleRate)
-	_ = loopEndPos
 
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
-	intervalSamples2Channels := intervalSamples * channels
+	intervalSamplesChannels := intervalSamples * channels
 
 	jp.playing = true
 
@@ -121,8 +140,8 @@ func (jp *JamPlayer) Start() error {
 		intervalsReady := 0
 
 		for {
-			buf := audio.Float32{}.Make(intervalSamples2Channels, intervalSamples2Channels)
-			rs, err := toReadSeeker(jp.source, intervalSamples2Channels)
+			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
+			rs, err := toReadSeeker(jp.source, intervalSamplesChannels)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
 				logrus.Errorf("source.Read error: %s", err)
 			}
@@ -176,19 +195,16 @@ func (jp *JamPlayer) Start() error {
 		play := true
 		currentPos := 0
 
-		loops := 1000
-		_ = loops
-
 		for play {
 			deinterleavedSamples := make([][]float32, 2)
 			endPos := currentPos + intervalSamples
-			fmt.Println(loopStartPos, loopEndPos, currentPos, endPos)
+
 			if endPos > len(samplesBuffer[0]) {
 				endPos = len(samplesBuffer[0])
 				play = false // дошли до конца - завершаем
 			}
 
-			if currentPos >= loopStartPos && endPos >= loopEndPos && loops > 0 {
+			if currentPos >= loopStartPos && endPos >= loopEndPos && jp.repeats > 0 {
 				play = true // если ранее получили флаг остановки - значит снимем его, мы ушли в очередной цикл
 				samplesToIntervalEnd := endPos - loopEndPos
 				endPos = loopEndPos
@@ -202,8 +218,8 @@ func (jp *JamPlayer) Start() error {
 
 				currentPos = loopStartPos + samplesToIntervalEnd
 
-				loops--
-				logrus.Debugf("loops left: %d", loops)
+				jp.repeats--
+				logrus.Debugf("repeats left: %d", jp.repeats)
 			} else {
 				for i := 0; i < channels; i++ {
 					deinterleavedSamples[i] = samplesBuffer[i][currentPos:endPos]
@@ -240,7 +256,7 @@ func (jp *JamPlayer) Start() error {
 			for hasNext {
 				var intervalData []byte
 
-				intervalData, hasNext = interval.Next()
+				intervalData, hasNext = interval.next()
 
 				if !hasNext {
 					interval.Flags = 1
@@ -260,7 +276,7 @@ func (jp *JamPlayer) Stop() {
 	}
 }
 
-func (ai *AudioInterval) Next() (data []byte, hasNext bool) {
+func (ai *AudioInterval) next() (data []byte, hasNext bool) {
 	hasNext = true
 	if len(ai.Data) > ai.index {
 		data = ai.Data[ai.index]

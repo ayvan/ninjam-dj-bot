@@ -29,14 +29,13 @@ func Walk(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func AnalyzeMP3Track(path string) (track *tracks.Track, err error) {
+func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 	// сделаем путь файла относительным, от текущей директории
-	relativePath := strings.TrimLeft(strings.TrimPrefix(path, dir), "/")
-	logrus.Infof("%s", relativePath)
+	relativePath := strings.TrimLeft(strings.TrimPrefix(trackPath, dir), "./")
 
-	tag, err := id3v2.Open(path, id3v2.Options{Parse: true})
+	tag, err := id3v2.Open(trackPath, id3v2.Options{Parse: true})
 	if err != nil {
-		err = fmt.Errorf("id3v2.Open error for %s: %s", path, err)
+		err = fmt.Errorf("id3v2.Open error for %s: %s", trackPath, err)
 		logrus.Error(err)
 		return
 	}
@@ -81,7 +80,7 @@ func AnalyzeMP3Track(path string) (track *tracks.Track, err error) {
 		}
 	}
 
-	loudnessData, err := bs1770wrap.CalculateLoudness(path)
+	loudnessData, err := bs1770wrap.CalculateLoudness(trackPath)
 	if err != nil {
 		err = fmt.Errorf("bs1770wrap.CalculateLoudness: %s", err)
 		logrus.Error(err)
