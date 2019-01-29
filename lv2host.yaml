@@ -1,0 +1,66 @@
+plugins:
+# filter out the low lows
+- pluginUri: http://calf.sourceforge.net/plugins/Filter
+  parameters:
+    freq: "47"
+    res: "0.707"
+    mode: "3"
+    inertia: "5"
+    level_in: "linear(reference - loudness)"
+# shape overall sound with the multiband
+#- pluginUri: http://calf.sourceforge.net/plugins/MultibandCompressor
+#  parameters:
+#    mode: "1"
+#    freq0: "120"
+#    threshold0: "linear(reference + 2)"
+#    ratio0: "6"
+#    attack0: "3"
+#    release0: "100"
+#    makeup0: "linear(1)"
+#    knee0: "linear(6)"
+#    freq1: "1000"
+#    threshold1: "linear(reference + 4)"
+#    ratio1: "8"
+#    attack1: "3"
+#    release1: "120"
+#    makeup1: "1"
+#    knee1: "linear(8)"
+#    freq2: "6000"
+#    threshold2: "linear(reference - 2)"
+#    ratio2: "1.7"
+#    attack2: "5"
+#    release2: "47"
+#    makeup2: "1"
+#    knee2: "linear(6)"
+#    threshold3: "linear(reference - 5)"
+#    ratio3: "2.2"
+#    attack3: "7"
+#    release3: "63"
+#    makeup3: "1"
+#    knee3: "linear(6)"
+# control macro dynamics
+- pluginUri: http://calf.sourceforge.net/plugins/Compressor
+  parameters:
+    threshold: "linear(reference + 2)"
+    ratio: "3"
+    attack: "29"
+    release: "60"
+    makeup: "1"
+    knee: "linear(min(loudnessPeak - loudness, 16))"
+    detection: "0"
+# control micro dynamics
+- pluginUri: http://calf.sourceforge.net/plugins/Compressor
+  parameters:
+    threshold: "linear(reference + 4)"
+    ratio: "10"
+    attack: "3"
+    release: "100"
+    makeup: "1"
+    knee: "linear(min(loudnessPeak - loudness, 16))"
+    detection: "1"
+# catch occasional peaks
+- pluginUri: http://gareus.org/oss/lv2/dpl#stereo
+  parameters:
+    gain: "max((loudnessPeak - loudness) - 6, 0) / 3"
+    threshold: "-0.5"
+    release: "0.030"
