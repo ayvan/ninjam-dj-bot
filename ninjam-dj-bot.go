@@ -90,15 +90,15 @@ func main() {
 	jp.LoadTrack(track)
 	jp.SetRepeats(100)
 
-	bot.OnSuccessAuth(func() {
-		bot.ChannelInit("BackingTrack")
-
-		msg := fmt.Sprintf("bpm %d", track.BPM)
-		bot.SendAdminMessage(msg)
-		msg = fmt.Sprintf("bpi %d", track.BPI)
-		bot.SendAdminMessage(msg)
-		jp.Start()
-	})
+	//bot.OnSuccessAuth(func() {
+	//	bot.ChannelInit("BackingTrack")
+	//
+	//	msg := fmt.Sprintf("bpm %d", track.BPM)
+	//	bot.SendAdminMessage(msg)
+	//	msg = fmt.Sprintf("bpi %d", track.BPI)
+	//	bot.SendAdminMessage(msg)
+	//	jp.Start()
+	//})
 
 	// инициализируем глобальный канал завершения горутин
 	sigChan := make(chan bool, 1)

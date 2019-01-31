@@ -1,4 +1,4 @@
-referenceLevel: -15
+referenceLevel: -14
 plugins:
 # filter out the low lows
 - pluginUri: http://calf.sourceforge.net/plugins/Filter
@@ -13,75 +13,83 @@ plugins:
     # global parameters
     mode: "1"
     # band 1 parameters
+    bypass0: "0"
     detection0: "0"
-    freq0: "300"
-    threshold0: "linear(integrated - 2)"
-    ratio0: "8"
-    attack0: "3"
+    freq0: "250"
+    threshold0: "linear(integrated + 2)"
+    ratio0: "5"
+    attack0: "2"
     release0: "120"
-    makeup0: "linear(0)"
+    makeup0: "linear(1)"
     knee0: "linear(6)"
     # band 2 parameters
+    bypass1: "0"
     detection1: "0"
     freq1: "1000"
     threshold1: "linear(integrated + 4)"
-    ratio1: "4"
+    ratio1: "3"
     attack1: "15"
     release1: "150"
     makeup1: "linear(0)"
     knee1: "linear(min((momentary - integrated) * 2, 16))"
     # band 3 parameters
+    bypass2: "0"
     detection2: "0"
     freq2: "6000"
-    threshold2: "linear(integrated - 2)"
-    ratio2: "3"
+    threshold2: "linear(integrated)"
+    ratio2: "2"
     attack2: "15"
     release2: "150"
     makeup2: "linear(0)"
-    knee2: "linear(min((momentary - integrated) * 2, 16))"
+    knee2: "linear(6)"
     # band 4 parameters
+    bypass3: "0"
     detection3: "0"
     threshold3: "linear(integrated - 4)"
-    ratio3: "2"
+    ratio3: "4"
     attack3: "30"
     release3: "300"
     makeup3: "linear(0)"
-    knee3: "linear(min((momentary - integrated) * 3, 16))"
+    knee3: "linear(4)"
 # control macro dynamics
 - pluginUri: http://calf.sourceforge.net/plugins/Compressor
   parameters:
-    threshold: "linear(shortterm + 1)"
+    bypass: "1"
+    threshold: "linear(shortterm + 2)"
     ratio: "3"
     attack: "30"
-    release: "100"
+    release: "80"
     makeup: "linear(0)"
-    knee: "linear(min((shortterm - integrated) * 3, 16))"
+    knee: "linear(min((shortterm - integrated) * 2, 16))"
     detection: "0"
 # control micro dynamics
 - pluginUri: http://calf.sourceforge.net/plugins/Compressor
   parameters:
-    threshold: "linear(momentary + 1)"
+    bypass: "1"
+    threshold: "linear(momentary + 2)"
     ratio: "4"
     attack: "1"
     release: "100"
     makeup: "linear(0)"
-    knee: "linear(min((momentary - integrated) * 3, 16))"
+    knee: "linear(min((momentary - integrated) * 2, 16))"
     detection: "1"
-# final shaping
+# compressing faster!
 - pluginUri: http://calf.sourceforge.net/plugins/Compressor
   parameters:
-    # push closer to reference
+    # push to reference
     level_in: "linear(reference - integrated)"
     threshold: "linear(-4)"
     ratio: "4"
-    attack: "0.1"
+    attack: "3"
     release: "100"
-    makeup: "linear(0)"
+    # leave already dynamic tracks as they are, but push up compressed tracks
+    # go by either peak or momentary, whichever gives bigger difference
+    makeup: "linear(max(max(15 - peak + integrated, 0) / 2.5, max(4 - (momentary - integrated), 0) / 1.5))"
     knee: "linear(2)"
     detection: "1"
-# catch occasional peaks
+# limit your master!
 - pluginUri: http://gareus.org/oss/lv2/dpl#stereo
   parameters:
-    gain: "max(max(15 - peak + integrated, 0) / 3, max(4 - (momentary - integrated), 0) / 2)"
+    gain: "0"
     threshold: "-0.5"
-    release: "0.030"
+    release: "0.010"

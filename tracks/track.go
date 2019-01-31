@@ -1,9 +1,5 @@
 package tracks
 
-import (
-	"github.com/jinzhu/gorm"
-)
-
 const (
 	KeyUnknown = iota
 	KeyA
@@ -72,14 +68,14 @@ var ModesMapping = map[uint]string{
 }
 
 type Track struct {
-	gorm.Model
+	Model
 	FilePath string `json:"file_path"`
 
 	Title            string `json:"title"`
 	Artist           string `json:"artist"`
 	Album            string `json:"album"`
 	AlbumTrackNumber uint   `json:"album_track_number"`
-	Tags             []Tag  `gorm:"many2many:track_tags;"`
+	Tags             []Tag  `json:"tags,omitempty" gorm:"many2many:track_tags;"`
 	Played           uint64 `json:"played"`
 
 	AuthorInfo string `json:"author_info"`
@@ -104,7 +100,7 @@ type Track struct {
 }
 
 type Tag struct {
-	gorm.Model
+	Model
 	Name string `json:"name"`
 }
 

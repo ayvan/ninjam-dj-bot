@@ -23,6 +23,9 @@ func Init(d string, db *tracks.JamDB) {
 }
 
 func Walk(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	if !info.IsDir() {
 		if mp3regex.MatchString(info.Name()) {
 			ProcessMP3Track(path)
@@ -99,6 +102,7 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 }
 
 func ProcessMP3Track(path string) (track *tracks.Track, err error) {
+	logrus.Infof("starting analyze track %s", path)
 	track, err = AnalyzeMP3Track(path)
 	if err != nil {
 		err = fmt.Errorf("AnalyzeMP3Track for %s: %s", path, err)
@@ -107,7 +111,7 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 	}
 
 	// проверяем, есть ли уже трек в базе
-	if trackInDB, _ := jamDB.TrackByPath(path); trackInDB != nil {
+	if trackInDB, _ := jamDB.TrackByPath(track.FilePath); trackInDB != nil {
 		// если трек есть - назначим ID нашему треку и запись обновится вместо добавления
 		track.ID = trackInDB.ID
 		// данные, которые из тегов MP3 не извлекаем, тоже следует перенести

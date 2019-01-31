@@ -24,6 +24,7 @@ func Init(db *tracks.JamDB) {
 	jamDB = db
 }
 
+// Tracks GET /tracks
 func Tracks(ctx echo.Context) error {
 	t, err := jamDB.Tracks()
 	if err != nil {
@@ -33,6 +34,24 @@ func Tracks(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, t)
 }
 
+// Track GET /tracks/:id
+func Track(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	t, err := jamDB.Track(uint(id))
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, t)
+}
+
+// Tags GET /tags
 func Tags(ctx echo.Context) error {
 	t, err := jamDB.Tags()
 	if err != nil {
@@ -42,7 +61,70 @@ func Tags(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, t)
 }
 
-// PostTrack /tracks
+// Tag GET /tags/:id
+func Tag(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	t, err := jamDB.Tag(uint(id))
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, t)
+}
+
+// PutTag PUT /tags/:id
+func PutTag(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	req := tracks.Tag{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	tag, err := jamDB.TagUpdate(uint(id), &req)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, tag)
+}
+
+// PostTag POST /tags/
+func PostTag(ctx echo.Context) error {
+	req := tracks.Tag{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	db := jamDB.DB().Save(&req)
+	if db.Error != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, db.Error.Error()))
+	}
+
+	tag, err := jamDB.Tag(req.ID)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, tag)
+}
+
+// PostTrack POST /tracks
 func PostTrack(ctx echo.Context) error {
 	file, err := ctx.FormFile("file")
 	if err != nil {
@@ -97,7 +179,7 @@ func PostTrack(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, track)
 }
 
-// PutTrack /tracks/:id
+// PutTrack PUT /tracks/:id
 func PutTrack(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 
@@ -111,32 +193,92 @@ func PutTrack(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
 	}
 
-	track := &tracks.Track{}
-	db := jamDB.DB().First(track, "id", id)
-	if db.RecordNotFound() {
+	track, err := jamDB.TrackUpdate(uint(id), &req)
+	if err == tracks.ErrorNotFound {
 		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
-	} else if db.Error != nil {
+	} else if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
 
-	// данные модели ORM, путь к файлу, число проигрываний менять запрещено,
-	// остальное - разрешено
-	req.Model = track.Model
-	req.FilePath = track.FilePath
-	req.Played = track.Played
+	return ctx.JSON(http.StatusOK, track)
+}
 
-	db = jamDB.DB().Save(req)
+// PostPlaylist POST /playlists/
+func PostPlaylist(ctx echo.Context) error {
+	req := tracks.Playlist{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	db := jamDB.DB().Save(&req)
 	if db.Error != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, db.Error.Error()))
+	}
+
+	playlist, err := jamDB.Playlist(req.ID)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
 
-	return ctx.JSON(http.StatusOK, req)
+	return ctx.JSON(http.StatusOK, playlist)
+}
+
+func Playlists(ctx echo.Context) error {
+	playlists, err := jamDB.Playlists()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, playlists)
+}
+
+func Playlist(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	playlist, err := jamDB.Playlist(uint(id))
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, playlist)
+}
+
+func PutPlaylist(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	req := tracks.Playlist{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	playlist, err := jamDB.PlaylistUpdate(uint(id), &req)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, playlist)
 }
 
 func newError(code int, message ...string) ErrorResp {
 	msg := ""
 	if len(message) == 0 || message[0] == "" {
 		msg = http.StatusText(code)
+	} else {
+		msg = message[0]
 	}
 
 	return ErrorResp{Error: msg, Code: code}

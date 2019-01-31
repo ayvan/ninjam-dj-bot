@@ -15,18 +15,20 @@ func main() {
 	}
 
 	var err error
-	dir, err := filepath.Abs(filepath.Dir(os.Args[1]))
+	dir, err := filepath.Abs(os.Args[1])
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	logrus.Infof("start processing tracks in %s", dir)
 
 	// помещаем БД в директорию с треками
-	tracks.Init(path.Join(dir, "tracks.db"))
-	defer tracks.DBClose()
-	tracks.LoadCache()
+	db, err := tracks.NewJamDB(path.Join(dir, "tracks.db"))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer db.DBClose()
 
-	tracks_sync.Init(dir)
+	tracks_sync.Init(dir, db)
 
 	if err = filepath.Walk(dir, tracks_sync.Walk); err != nil {
 		logrus.Fatal(err)
