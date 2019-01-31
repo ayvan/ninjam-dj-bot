@@ -87,16 +87,20 @@ type Track struct {
 	TrackInfo  string `json:"track_info"`
 
 	// JamPlayer info
-	Length        float32 `json:"length"`
-	LoopStart     uint64  `json:"loop_start"`
-	LoopEnd       uint64  `json:"loop_end"`
-	Loudness      float32 `json:"loudness"`
-	LoudnessRange float32 `json:"loudness_range"`
-	LoudnessPeak  float32 `json:"loudness_peak"`
-	BPM           uint    `json:"bpm"`
-	BPI           uint    `json:"bpi"`
-	Key           uint    `json:"key"`
-	Mode          uint    `json:"mode"`
+	Length    float32 `json:"length"`
+	LoopStart uint64  `json:"loop_start"`
+	LoopEnd   uint64  `json:"loop_end"`
+	BPM       uint    `json:"bpm"`
+	BPI       uint    `json:"bpi"`
+	Key       uint    `json:"key"`
+	Mode      uint    `json:"mode"`
+
+	// Loudness
+	Integrated float32 `json:"integrated"`
+	Range      float32 `json:"range"`
+	Peak       float32 `json:"peak"`
+	Shortterm  float32 `json:"shortterm"`
+	Momentary  float32 `json:"momentary"`
 }
 
 type Tag struct {

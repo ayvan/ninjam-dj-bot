@@ -34,8 +34,11 @@ func main() {
 
 	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
 
-	tracks.Init(config.Get().DBFile)
-	tracks.LoadCache()
+	jamDB, err := tracks.NewJamDB(config.Get().DBFile)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	api.Init(jamDB)
 
 	pidFile := config.Get().AppPidPath
 
@@ -78,7 +81,7 @@ func main() {
 
 	jp := dj.NewJamPlayer(dir, bot, hostconfig)
 
-	tracks_sync.Init(dir)
+	tracks_sync.Init(dir, jamDB)
 	track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "DrumLoop.mp3"))
 	if err != nil {
 		logrus.Fatal(err)

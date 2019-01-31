@@ -77,12 +77,14 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 
 	jp.setBPM(track.BPM)
 	jp.setBPI(track.BPI)
-	jp.SetRepeats(0)
+	jp.SetRepeats(0) // по-умолчанию повторы не заданы, их должны будут задать отдельно если запуск происходит из плейлиста
 
-	jp.hostConfig.ValueMap["reference"] = -14
-	jp.hostConfig.ValueMap["loudness"] = track.Loudness
-	jp.hostConfig.ValueMap["loudnessRange"] = track.LoudnessRange
-	jp.hostConfig.ValueMap["loudnessPeak"] = track.LoudnessPeak
+	jp.hostConfig.ValueMap["integrated"] = track.Integrated
+	jp.hostConfig.ValueMap["range"] = track.Range
+	jp.hostConfig.ValueMap["peak"] = track.Peak
+	jp.hostConfig.ValueMap["shortterm"] = track.Shortterm
+	jp.hostConfig.ValueMap["momentary"] = track.Momentary
+
 	err = jp.hostConfig.Evaluate()
 	if err != nil {
 		logrus.Fatal(err)
@@ -151,10 +153,10 @@ func (jp *JamPlayer) Start() error {
 
 	// посчитаем на каких сэмплах у нас начало, и на каких конец зацикливания
 	startTime := time.Duration(jp.track.LoopStart) * time.Microsecond
-	loopStartPos := timeToSamples(startTime, jp.sampleRate)
+	loopStartPos := timeToSamples(startTime, jp.sampleRate) - 1 // это позиция в слайсе, потому -1
 
 	endTime := time.Duration(jp.track.LoopEnd) * time.Microsecond
-	loopEndPos := timeToSamples(endTime, jp.sampleRate)
+	loopEndPos := timeToSamples(endTime, jp.sampleRate) - 1 // это позиция в слайсе, потому -1
 
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
@@ -181,23 +183,23 @@ func (jp *JamPlayer) Start() error {
 				logrus.Errorf("source.Read error: %s", err)
 			}
 
-			var n int
-			n, err = rs.Read(buf)
+			var bufLen int
+			bufLen, err = rs.Read(buf)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
 				logrus.Errorf("source.Read error: %s", err)
 			}
-			if n == 0 {
+			if bufLen == 0 {
 				bufferFull = true
 				return
 			}
 
-			deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32), channels)
+			deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32)[:bufLen], channels)
 			if err != nil {
 				logrus.Errorf("DeinterleaveSamples error: %s", err)
 				return
 			}
 
-			lv2host.ProcessBuffer(jp.host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(intervalSamples))
+			lv2host.ProcessBuffer(jp.host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(len(deinterleavedSamples[0])))
 
 			for i := 0; i < channels; i++ {
 				samplesBuffer[i] = append(samplesBuffer[i], deinterleavedSamples[i]...)
@@ -220,7 +222,9 @@ func (jp *JamPlayer) Start() error {
 				logrus.Errorf("panic in JamPlayer.Start: %s", r)
 				logrus.Error(string(debug.Stack()))
 			}
-
+			// если закончили - значит до того, как поставим флаг что игра трека завершена, мы подождём до конца интервала
+			timer := time.NewTimer(time.Duration(intervalTime))
+			<-timer.C
 			jp.playing = false
 		}()
 
@@ -233,36 +237,28 @@ func (jp *JamPlayer) Start() error {
 		currentPos := 0
 
 		for play {
+			fmt.Println("|", currentPos)
 			deinterleavedSamples := make([][]float32, 2)
-			endPos := currentPos + intervalSamples
+			endPos := currentPos + intervalSamples - 1
 
-			if endPos > len(samplesBuffer[0]) {
-				endPos = len(samplesBuffer[0])
-				play = false // дошли до конца - завершаем
+			if endPos > len(samplesBuffer[0])-1 {
+				endPos = len(samplesBuffer[0]) - 1 // это позиция в слайсе, потому -1
+				play = false                       // дошли до конца - завершаем
 			}
 
-			if currentPos >= loopStartPos && endPos >= loopEndPos && jp.repeats > 0 {
+			if endPos >= loopEndPos && jp.repeats > 0 {
 				play = true // если ранее получили флаг остановки - значит снимем его, мы ушли в очередной цикл
-				samplesToIntervalEnd := endPos - loopEndPos
-				endPos = loopEndPos
+				var loops int
+				deinterleavedSamples, currentPos, loops = loop(samplesBuffer, currentPos, loopStartPos, loopEndPos, intervalSamples, channels)
 
-				for i := 0; i < channels; i++ {
-					// создаём новый слайс и копируем в него, т.к. дальше нам нужно с ним работать отдельно от кэшированного слайса - мы будем его менять через append
-					deinterleavedSamples[i] = make([]float32, endPos-currentPos, intervalSamples)
-					copy(deinterleavedSamples[i], samplesBuffer[i][currentPos:endPos])
-					deinterleavedSamples[i] = append(deinterleavedSamples[i], samplesBuffer[i][loopStartPos:loopStartPos+samplesToIntervalEnd]...)
-				}
-
-				currentPos = loopStartPos + samplesToIntervalEnd
-
-				jp.repeats--
+				jp.repeats -= loops
 				logrus.Debugf("repeats left: %d", jp.repeats)
 			} else {
 				for i := 0; i < channels; i++ {
-					deinterleavedSamples[i] = samplesBuffer[i][currentPos:endPos]
+					deinterleavedSamples[i] = samplesBuffer[i][currentPos : endPos+1]
 				}
 
-				currentPos = endPos
+				currentPos = endPos + 1
 			}
 
 			data, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
@@ -327,7 +323,7 @@ func (ai *AudioInterval) next() (data []byte, hasNext bool) {
 }
 
 func toReadSeeker(reader io.Reader, samples int) (res audio.ReadSeeker, err error) {
-	buf := audio.NewBuffer(audio.Float32{})
+	buf := audio.NewBuffer(make(audio.Float32, 0, samples))
 	res = buf
 
 	for ; samples > 0; samples-- {
@@ -354,6 +350,50 @@ func Int16ToFloat32(s int16) float32 {
 }
 
 func timeToSamples(t time.Duration, sampleRate int) int {
-	return int(math.Ceil(float64(sampleRate) * float64(t) / float64(time.Second)))
+	return int(math.Round(float64(sampleRate) * float64(t) / float64(time.Second)))
 
+}
+
+func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float32, ncPos int, loops int) {
+	ncPos = cPos
+	l := length
+
+	res = make([][]float32, channels, channels)
+
+	fors := 0
+	if ncPos+l >= ePos {
+		for {
+			sliceEnd := ncPos + l
+			if sliceEnd > ePos+1 {
+				sliceEnd = ePos + 1
+				loops++
+			}
+
+			for i := 0; i < channels; i++ {
+				res[i] = append(res[i], s[i][ncPos:sliceEnd]...)
+				l = length - len(res[i])
+			}
+
+			ncPos = sliceEnd
+
+			if l == 0 {
+				return
+			}
+
+			ncPos = sPos
+
+			if l < 0 || fors > 100 {
+				logrus.Errorf("SHIT HAPPENED %d %d", l, fors)
+				return
+			}
+
+			fors++
+			continue
+		}
+		return
+	}
+
+	res = s[ncPos : ncPos+length]
+
+	return
 }

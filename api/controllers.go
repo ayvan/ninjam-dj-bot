@@ -18,8 +18,14 @@ type ErrorResp struct {
 	Code  int    `json:"code"`
 }
 
+var jamDB *tracks.JamDB
+
+func Init(db *tracks.JamDB) {
+	jamDB = db
+}
+
 func Tracks(ctx echo.Context) error {
-	t, err := tracks.Tracks()
+	t, err := jamDB.Tracks()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
@@ -28,7 +34,7 @@ func Tracks(ctx echo.Context) error {
 }
 
 func Tags(ctx echo.Context) error {
-	t, err := tracks.Tags()
+	t, err := jamDB.Tags()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
@@ -106,7 +112,7 @@ func PutTrack(ctx echo.Context) error {
 	}
 
 	track := &tracks.Track{}
-	db := tracks.DB().First(track, "id", id)
+	db := jamDB.DB().First(track, "id", id)
 	if db.RecordNotFound() {
 		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
 	} else if db.Error != nil {
@@ -119,7 +125,7 @@ func PutTrack(ctx echo.Context) error {
 	req.FilePath = track.FilePath
 	req.Played = track.Played
 
-	db = tracks.DB().Save(req)
+	db = jamDB.DB().Save(req)
 	if db.Error != nil {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}

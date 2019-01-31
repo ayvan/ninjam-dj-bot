@@ -15,9 +15,11 @@ import (
 var mp3regex = regexp.MustCompile(`\.mp3$`)
 
 var dir string
+var jamDB *tracks.JamDB
 
-func Init(d string) {
+func Init(d string, db *tracks.JamDB) {
 	dir = d
+	jamDB = db
 }
 
 func Walk(path string, info os.FileInfo, err error) error {
@@ -80,17 +82,18 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 		}
 	}
 
-	loudnessData, err := bs1770wrap.CalculateLoudness(trackPath)
+	ldata, err := bs1770wrap.CalculateLoudness(trackPath)
 	if err != nil {
 		err = fmt.Errorf("bs1770wrap.CalculateLoudness: %s", err)
 		logrus.Error(err)
 		return
 	}
 
-	track.Loudness = loudnessData.IntegratedLoudness
-	track.LoudnessPeak = loudnessData.TruePeak
-	track.LoudnessRange = loudnessData.LoudnessRange
-	track.Length = loudnessData.Length
+	track.Integrated = ldata.Integrated
+	track.Range = ldata.Range
+	track.Peak = ldata.Peak
+	track.Shortterm = ldata.Shortterm
+	track.Momentary = ldata.Momentary
 
 	return
 }
@@ -104,7 +107,7 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 	}
 
 	// проверяем, есть ли уже трек в базе
-	if trackInDB, _ := tracks.TrackByPath(path); trackInDB != nil {
+	if trackInDB, _ := jamDB.TrackByPath(path); trackInDB != nil {
 		// если трек есть - назначим ID нашему треку и запись обновится вместо добавления
 		track.ID = trackInDB.ID
 		// данные, которые из тегов MP3 не извлекаем, тоже следует перенести
@@ -112,7 +115,7 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 		track.Played = trackInDB.Played
 	}
 
-	if err = tracks.DB().Save(track).Error; err != nil {
+	if err = jamDB.DB().Save(track).Error; err != nil {
 		err = fmt.Errorf("add track error for %s: %s", path, err)
 		logrus.Error(err)
 		return
