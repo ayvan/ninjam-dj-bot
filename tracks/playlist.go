@@ -13,6 +13,7 @@ type PlaylistTrack struct {
 	TrackID    uint `json:"track_id"`
 	Repeats    uint `json:"repeats"` // число повторений зацикленной части трека
 	Timeout    uint `json:"timeout"` // пауза после трека
+	Order      int  `json:"order"`   // порядок трека в плейлисте
 	Queue      bool `json:"queue"`   // действует ли очередь во время трека
 }
 

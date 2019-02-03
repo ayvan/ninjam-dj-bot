@@ -162,6 +162,8 @@ func (jp *JamPlayer) Start() error {
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
 	intervalSamplesChannels := intervalSamples * channels
 
+	logrus.Debugf("Loop start pos: %d | Loop End Pos: %d", loopStartPos, loopEndPos)
+
 	jp.playing = true
 
 	samplesBuffer := make([][]float32, 2)
@@ -237,7 +239,7 @@ func (jp *JamPlayer) Start() error {
 		currentPos := 0
 
 		for play {
-			fmt.Println("|", currentPos)
+			logrus.Debugf("Current pos: %d", currentPos)
 			deinterleavedSamples := make([][]float32, 2)
 			endPos := currentPos + intervalSamples - 1
 

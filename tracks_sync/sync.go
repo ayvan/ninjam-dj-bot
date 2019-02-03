@@ -61,16 +61,21 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 	frames := tag.GetFrames("PRIV")
 
 	for _, frame := range frames {
+		// тут ошибки не критичны, трек сохранится в БД "как есть" без информации - его можно будет редактировать
 		f, ok := frame.(id3v2.UnknownFrame)
 		if ok {
 			frameStruct := private_ext_frame_data{}
 			_, data := getFrameNameAndData(f.Body)
-			frameStruct.Unmarshal(data)
+			err := frameStruct.Unmarshal(data)
+			if err != nil {
+				logrus.Warn(err)
+				continue
+			}
 
 			if frameStruct.version != 2 {
 				err = fmt.Errorf("bad tag version: %d", frameStruct.version)
-				logrus.Error(err)
-				return
+				logrus.Warn(err)
+				continue
 			}
 
 			trackData := frameStruct.data
@@ -91,6 +96,8 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 		logrus.Error(err)
 		return
 	}
+
+	track.Length = ldata.Length
 
 	track.Integrated = ldata.Integrated
 	track.Range = ldata.Range
