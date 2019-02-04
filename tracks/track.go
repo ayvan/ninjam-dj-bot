@@ -10,7 +10,6 @@ const (
 	KeyD
 	KeyDSharp
 	KeyE
-	KeyESharp
 	KeyF
 	KeyFSharp
 	KeyG
@@ -33,7 +32,6 @@ const (
 	KeyNameD       = "D"
 	KeyNameDSharp  = "D#"
 	KeyNameE       = "E"
-	KeyNameESharp  = "E#"
 	KeyNameF       = "F"
 	KeyNameFSharp  = "F#"
 	KeyNameG       = "G"
@@ -50,7 +48,6 @@ var KeysMapping = map[uint]string{
 	KeyD:       KeyNameD,
 	KeyDSharp:  KeyNameDSharp,
 	KeyE:       KeyNameE,
-	KeyESharp:  KeyNameESharp,
 	KeyF:       KeyNameF,
 	KeyFSharp:  KeyNameFSharp,
 	KeyG:       KeyNameG,

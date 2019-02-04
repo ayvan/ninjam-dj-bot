@@ -25,6 +25,7 @@ import (
 )
 
 func main() {
+	config.Init()
 	dj.Start()
 	defer dj.Stop()
 

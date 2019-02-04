@@ -43,7 +43,7 @@ type Player struct {
 
 var appConfig *AppConfig
 
-func init() {
+func Init() {
 	appConfig = &AppConfig{}
 
 	workPath, _ := os.Getwd()

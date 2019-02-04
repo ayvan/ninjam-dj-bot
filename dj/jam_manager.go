@@ -1,6 +1,8 @@
 package dj
 
-import "github.com/Ayvan/ninjam-dj-bot/tracks"
+import (
+	"github.com/Ayvan/ninjam-dj-bot/tracks"
+)
 
 type Manager interface {
 	Playlists() []tracks.Playlist
@@ -29,6 +31,22 @@ type JamManager struct {
 
 	jamPlayer *JamPlayer
 	jamDB     tracks.JamTracksDB
+}
+
+type JamChatCommand struct {
+	Command string
+	Param   string
+	Tags    []string
+	ID      uint
+}
+
+type JamCommand struct {
+	Command uint
+	Param   string
+	Key     uint
+	Mode    uint
+	ID      uint
+	Tags    []uint
 }
 
 func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer) *JamManager {
@@ -60,4 +78,23 @@ func (jm *JamManager) StartTrack(id uint) (err error) {
 
 func (jm *JamManager) Stop() {
 	return
+}
+
+func (jm *JamManager) Command(chatCommand string) string {
+	command := Command(CommandParse(chatCommand))
+
+	switch command.Command {
+	case CommandRandom:
+	case CommandTrack:
+	case CommandPlaylist:
+	case CommandStop:
+	case CommandPlay:
+	case CommandNext:
+	case CommandPrev:
+	case CommandPlaying:
+	default:
+		return `Невозможно распознать команду, используйте "help" для получения списка и формата доступных команд`
+	}
+
+	return ""
 }

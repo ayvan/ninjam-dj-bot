@@ -169,7 +169,7 @@ func (jp *JamPlayer) Start() error {
 	samplesBuffer := make([][]float32, 2)
 
 	// эта переменная будет установлена когда буфер будет заполнен всеми данными из MP3 файла
-	bufferFull := false
+	//bufferFull := false
 
 	waitData := make(chan bool, 1)
 	// это фоновая загрузка и декодирование MP3 в буфер
@@ -191,7 +191,7 @@ func (jp *JamPlayer) Start() error {
 				logrus.Errorf("source.Read error: %s", err)
 			}
 			if bufLen == 0 {
-				bufferFull = true
+				//bufferFull = true
 				return
 			}
 
