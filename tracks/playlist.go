@@ -6,6 +6,7 @@ import (
 )
 
 type PlaylistSlice []Playlist
+type PlaylistTrackSlice []PlaylistTrack
 
 type PlaylistTrack struct {
 	Model
@@ -37,4 +38,16 @@ func (ps PlaylistSlice) String() (res string) {
 
 	res = strings.TrimRight(res, "\n")
 	return
+}
+
+func (s PlaylistTrackSlice) Len() int {
+	return len(s)
+}
+
+func (s PlaylistTrackSlice) Less(i, j int) bool {
+	return s[i].Order < s[j].Order
+}
+
+func (s PlaylistTrackSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

@@ -75,9 +75,8 @@ type Track struct {
 	Tags             []Tag  `json:"tags,omitempty" gorm:"many2many:track_tags;"`
 	Played           uint64 `json:"played"`
 
-	AuthorInfo string `json:"author_info"`
-	AlbumInfo  string `json:"album_info"`
-	TrackInfo  string `json:"track_info"`
+	AuthorID uint64 `json:"author_id"`
+	Author   Author `json:"author"`
 
 	// JamPlayer info
 	Length    float32 `json:"length"`

@@ -80,12 +80,12 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 
 			trackData := frameStruct.data
 
-			track.Key = uint(trackData.key)
-			track.Mode = uint(trackData.mode)
-			track.BPM = uint(trackData.bpm)
-			track.BPI = uint(trackData.bpi)
-			track.LoopStart = uint64(trackData.ls)
-			track.LoopEnd = uint64(trackData.le)
+			track.Key = trackData.Key()
+			track.Mode = trackData.Mode()
+			track.BPM = trackData.BPM()
+			track.BPI = trackData.BPI()
+			track.LoopStart = trackData.LoopStart()
+			track.LoopEnd = trackData.LoopEnd()
 
 		}
 	}

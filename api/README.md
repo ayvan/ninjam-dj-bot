@@ -25,9 +25,13 @@ Example response:
   "album": "Best of PornHub",
   "album_track_number": 1,
   "played": 0,
-  "author_info": "",
-  "album_info": "",
-  "track_info": "",
+  "author_id":1,
+  "author":{
+    "id":1,
+    "name":"Burillo",
+    "url":"",
+    "description":""
+  },
   "length": 0,
   "loop_start": 1827878,
   "loop_end": 16373318,
@@ -60,9 +64,13 @@ Example response:
   "album": "Best of PornHub",
   "album_track_number": 1,
   "played": 0,
-  "author_info": "",
-  "album_info": "",
-  "track_info": "",
+  "author_id": 1,
+  "author":{
+    "id":1,
+    "name":"Burillo",
+    "url":"",
+    "description":""
+  },
   "length": 0,
   "loop_start": 1827878,
   "loop_end": 16373318,
@@ -101,22 +109,71 @@ Example request:
       "id":3
     }
   ],
-  "played": 0,
-  "author_info": "",
-  "album_info": "",
-  "track_info": "",
-  "length": 0,
-  "loop_start": 1827878,
-  "loop_end": 16373318,
-  "bpm": 132,
-  "bpi": 16,
-  "key": 7,
-  "mode": 1,
-  "integrated": -14.1,
-  "range": 5.14,
-  "peak": -0.42,
-  "shortterm": -13.83,
-  "momentary": -11.74
+  "author_id":1
+}
+```
+
+**POST /v1/authors/**
+
+HTTP codes:
+201
+400
+
+Example request:
+```json
+{
+  "name":"Burillo"
+}
+```
+
+**GET /v1/authors/**
+
+HTTP codes:
+200
+400
+404
+
+Example response:
+```json
+[{
+  "id": 1,
+  "name":"Burillo",
+  "url":"",
+  "description":""
+}]
+```
+
+**GET /v1/tracks/:id**
+
+HTTP codes:
+200
+400
+404
+
+Example response:
+```json
+{
+  "id": 1,
+  "name":"Burillo",
+  "url":"",
+  "description":""
+}
+```
+
+**PUT /v1/tracks/:id**
+
+HTTP codes:
+200
+400
+404
+
+Example request:
+```json
+{
+  "id": 1,
+  "name":"Burillo",
+  "url":"",
+  "description":""  
 }
 ```
 
@@ -280,7 +337,7 @@ HTTP codes:
 Example request:
 ```json
 {
-  "name":"Motherfucker"
+  "name":"Death"
 }
 ```
 
@@ -294,6 +351,6 @@ HTTP codes:
 Example request:
 ```json
 {
-  "name":"Death"
+  "name":"Rock"
 }
 ```

@@ -16,8 +16,10 @@ type Model struct {
 
 type JamTracksDB interface {
 	Tracks() ([]*Track, error)
+	CountTracks() (uint64, error)
 	Track(id uint) (*Track, error)
 	Playlists() ([]*Playlist, error)
+	CountPlaylists() (uint64, error)
 	Playlist(id uint) (*Playlist, error)
 }
 
@@ -37,7 +39,7 @@ func NewJamDB(file string) (jamDB *JamDB, err error) {
 		return
 	}
 
-	if err = db.AutoMigrate(&Track{}, &Tag{}, &Playlist{}, &PlaylistTrack{}).Error; err != nil {
+	if err = db.AutoMigrate(&Track{}, &Tag{}, &Playlist{}, &PlaylistTrack{}, &Author{}).Error; err != nil {
 		err = fmt.Errorf("failed to migrate database: %s", err)
 		return
 	}
@@ -65,13 +67,25 @@ func (jdb *JamDB) Tags() (tags []*Tag, err error) {
 
 func (jdb *JamDB) Tracks() (tracks []*Track, err error) {
 	tracks = []*Track{}
-	err = jdb.db.Preload("Tags").Find(&tracks).Error
+	err = jdb.db.Preload("Tags").Preload("Author").Find(&tracks).Error
+	return
+}
+
+func (jdb *JamDB) CountTracks() (count uint64, err error) {
+	err = jdb.db.Model(&Track{}).Count(&count).Error
+
+	return
+}
+
+func (jdb *JamDB) CountPlaylists() (count uint64, err error) {
+	err = jdb.db.Model(&Playlist{}).Count(&count).Error
+
 	return
 }
 
 func (jdb *JamDB) Track(id uint) (res *Track, err error) {
 	track := &Track{}
-	dbRes := jdb.db.Preload("Tags").First(&track, id)
+	dbRes := jdb.db.Preload("Tags").Preload("Author").First(&track, id)
 	if dbRes.RecordNotFound() {
 		err = ErrorNotFound
 		return
@@ -97,7 +111,7 @@ func (jdb *JamDB) TrackUpdate(id uint, req *Track) (res *Track, err error) {
 	req.FilePath = track.FilePath
 	req.Played = track.Played
 
-	db := jdb.db.Omit("tags").Save(&req)
+	db := jdb.db.Omit("tags", "author").Save(&req)
 	if db.Error != nil {
 		err = db.Error
 		return
@@ -110,7 +124,7 @@ func (jdb *JamDB) TrackUpdate(id uint, req *Track) (res *Track, err error) {
 	}
 
 	res = &Track{}
-	dbRes := jdb.db.Preload("Tags").First(res, id)
+	dbRes := jdb.db.Preload("Tags").Preload("Author").First(res, id)
 	if dbRes.RecordNotFound() {
 		err = ErrorNotFound
 		return

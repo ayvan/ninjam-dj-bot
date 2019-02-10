@@ -40,6 +40,7 @@ type JamPlayer struct {
 	playing    bool
 	host       *lv2host.CLV2Host
 	hostConfig *lv2hostconfig.LV2HostConfig
+	onStopFunc func()
 }
 
 type AudioInterval struct {
@@ -52,6 +53,16 @@ type AudioInterval struct {
 
 func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
 	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
+}
+
+func (jp *JamPlayer) SetOnStop(f func()) {
+	jp.onStopFunc = f
+}
+
+func (jp *JamPlayer) onStop() {
+	if jp.onStopFunc != nil {
+		jp.onStopFunc()
+	}
 }
 
 func (jp *JamPlayer) Playing() bool {
@@ -144,6 +155,9 @@ func (jp *JamPlayer) setBPI(bpi uint) {
 }
 
 func (jp *JamPlayer) Start() error {
+	if jp.playing {
+		return nil
+	}
 	if jp.source == nil {
 		fmt.Println("no source detected")
 		return fmt.Errorf("no source detected")
@@ -228,6 +242,7 @@ func (jp *JamPlayer) Start() error {
 			timer := time.NewTimer(time.Duration(intervalTime))
 			<-timer.C
 			jp.playing = false
+			jp.onStop()
 		}()
 
 		ticker := time.NewTicker(time.Duration(intervalTime))
