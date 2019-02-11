@@ -143,7 +143,7 @@ Example response:
 }]
 ```
 
-**GET /v1/tracks/:id**
+**GET /v1/authors/:id**
 
 HTTP codes:
 200
@@ -160,7 +160,7 @@ Example response:
 }
 ```
 
-**PUT /v1/tracks/:id**
+**PUT /v1/authors/:id**
 
 HTTP codes:
 200
