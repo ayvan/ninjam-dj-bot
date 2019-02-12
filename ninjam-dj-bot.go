@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -80,16 +79,16 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	jp := dj.NewJamPlayer(dir, bot, hostconfig)
+	//jp := dj.NewJamPlayer(dir, bot, hostconfig)
 
 	tracks_sync.Init(dir, jamDB)
-	track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "DrumLoop.mp3"))
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	jp.LoadTrack(track)
-	jp.SetRepeats(100)
+	//track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "Dynamic Drums.mp3"))
+	//if err != nil {
+	//	logrus.Fatal(err)
+	//}
+	//
+	//jp.LoadTrack(track)
+	//jp.SetRepeats(100)
 
 	//bot.OnSuccessAuth(func() {
 	//	bot.ChannelInit("BackingTrack")

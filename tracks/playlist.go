@@ -1,21 +1,18 @@
 package tracks
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 type PlaylistSlice []Playlist
-type PlaylistTrackSlice []PlaylistTrack
 
 type PlaylistTrack struct {
-	Model
-	PlaylistID uint `json:"playlist_id"`
-	TrackID    uint `json:"track_id"`
-	Repeats    uint `json:"repeats"` // число повторений зацикленной части трека
-	Timeout    uint `json:"timeout"` // пауза после трека
-	Order      int  `json:"order"`   // порядок трека в плейлисте
-	Queue      bool `json:"queue"`   // действует ли очередь во время трека
+	TrackID uint `json:"track_id"`
+	Repeats uint `json:"repeats"` // число повторений зацикленной части трека
+	Timeout uint `json:"timeout"` // пауза после трека
+	Queue   bool `json:"queue"`   // действует ли очередь во время трека
 }
 
 type Playlist struct {
@@ -23,8 +20,9 @@ type Playlist struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	// TrackTime время трека в секундах, по-умолчанию для добавляемого трека, на его основе будет рассчитано число повторов трека
-	TrackTime uint            `json:"track_time"`
-	Tracks    []PlaylistTrack `json:"tracks"`
+	TrackTime  uint            `json:"track_time"`
+	Tracks     []PlaylistTrack `json:"tracks"`
+	TracksJSON []byte          `json:"-"`
 }
 
 func (ps PlaylistSlice) String() (res string) {
@@ -40,14 +38,40 @@ func (ps PlaylistSlice) String() (res string) {
 	return
 }
 
-func (s PlaylistTrackSlice) Len() int {
-	return len(s)
+func (p *Playlist) BeforeSave() (err error) {
+	b, err := json.Marshal(p.Tracks)
+
+	if err != nil {
+		return
+	}
+
+	p.TracksJSON = b
+
+	return
 }
 
-func (s PlaylistTrackSlice) Less(i, j int) bool {
-	return s[i].Order < s[j].Order
+func (p *Playlist) BeforeUpdate() (err error) {
+	b, err := json.Marshal(p.Tracks)
+
+	if err != nil {
+		return
+	}
+
+	p.TracksJSON = b
+
+	return
 }
 
-func (s PlaylistTrackSlice) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
+func (p *Playlist) AfterFind() (err error) {
+
+	p.Tracks = make([]PlaylistTrack, 0)
+	if len(p.TracksJSON) != 0 {
+		err = json.Unmarshal(p.TracksJSON, &p.Tracks)
+
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }

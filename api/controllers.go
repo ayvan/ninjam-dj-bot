@@ -193,6 +193,11 @@ func PutTrack(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
 	}
 
+	err = tracks_sync.UpdateMP3Track(&req)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
 	track, err := jamDB.TrackUpdate(uint(id), &req)
 	if err == tracks.ErrorNotFound {
 		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))

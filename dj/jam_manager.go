@@ -101,10 +101,8 @@ func (jm *JamManager) PlayRandom(command JamCommand) (err error) {
 		break
 	}
 
-	jm.jamPlayer.setMP3Source(track.FilePath)
+	jm.jamPlayer.LoadTrack(track)
 	jm.jamPlayer.SetRepeats(0)
-	jm.jamPlayer.setBPI(track.BPI)
-	jm.jamPlayer.setBPM(track.BPM)
 
 	jm.trackID = track.ID
 	jm.playlistID = 0
@@ -160,9 +158,10 @@ func (jm *JamManager) Command(chatCommand string) string {
 }
 
 func (jm *JamManager) onStop() {
-	jm.playing = false
-
 	if jm.playingMode == playingPlaylist {
 		// TODO найти какой трек в листе мы играем и запустить следующий, или сообщить что плейлист окончен
+		// если у нас jm.playing == false значит стоп пришёл т.к. мы сами дали команды на стоп - тогда ничего не делаем
 	}
+
+	jm.playing = false
 }

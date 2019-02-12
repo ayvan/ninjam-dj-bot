@@ -88,6 +88,21 @@ Example response:
 
 **PUT /v1/tracks/:id**
 
+Для установки тегов трека следует в поле tags поместить массив из объектов с ID тега, прочие поля объектов игнорируются:
+```json
+[
+  {
+    "id":1
+  },
+  {
+    "id":3
+  }
+]
+```
+
+Все теги трека перезаписываются теми, которые были переданы в массиве "tags", таким образом, управление тегами
+сводится к редактированию этого массива.
+
 HTTP codes:
 200
 400
@@ -179,6 +194,16 @@ Example request:
 
 **POST /v1/playlists/**
 
+Треки плейлиста содержатся в поле "tracks" в виде массива объектов:
+```json
+{
+  "track_id":1, // ID трека
+  "repeats":10, // число повторов трека при его воспроизведении
+  "timeout":60, // таймаут после окончания трека и перед воспроизведением следующего
+  "queue":true // активна ли очередь музыкантов, т.е. будет ли объявляться, кто играет следующим по очереди
+}
+```
+
 HTTP codes:
 200
 400
@@ -219,10 +244,14 @@ Example response:
   "track_time": 0,
   "tracks": [
     {
-      "id": 4,
-      "playlist_id": 4,
       "track_id": 1,
       "repeats": 10,
+      "timeout": 60,
+      "queue": true
+    },
+    {
+      "track_id": 2,
+      "repeats": 15,
       "timeout": 60,
       "queue": true
     }
@@ -248,8 +277,6 @@ Example response:
   "track_time": 0,
   "tracks": [
     {
-      "id": 4,
-      "playlist_id": 4,
       "track_id": 1,
       "repeats": 10,
       "timeout": 60,
@@ -275,7 +302,6 @@ Example request:
   "track_time": 0,
   "tracks": [
     {
-      "id": 4,
       "track_id":1,
       "repeats": 10,
       "timeout": 80,

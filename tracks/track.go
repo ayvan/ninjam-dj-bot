@@ -79,13 +79,13 @@ type Track struct {
 	Author   Author `json:"author"`
 
 	// JamPlayer info
-	Length    float32 `json:"length"`
-	LoopStart uint64  `json:"loop_start"`
-	LoopEnd   uint64  `json:"loop_end"`
-	BPM       uint    `json:"bpm"`
-	BPI       uint    `json:"bpi"`
-	Key       uint    `json:"key"`
-	Mode      uint    `json:"mode"`
+	Length    uint64 `json:"length"`
+	LoopStart uint64 `json:"loop_start"`
+	LoopEnd   uint64 `json:"loop_end"`
+	BPM       uint   `json:"bpm"`
+	BPI       uint   `json:"bpi"`
+	Key       uint   `json:"key"`
+	Mode      uint   `json:"mode"`
 
 	// Loudness
 	Integrated float32 `json:"integrated"`

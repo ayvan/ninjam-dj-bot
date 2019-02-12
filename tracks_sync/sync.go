@@ -7,10 +7,13 @@ import (
 	"github.com/burillo-se/bs1770wrap"
 	"github.com/sirupsen/logrus"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+const frameName = "GuitarJam"
 
 var mp3regex = regexp.MustCompile(`\.mp3$`)
 
@@ -65,15 +68,18 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 		f, ok := frame.(id3v2.UnknownFrame)
 		if ok {
 			frameStruct := private_ext_frame_data{}
-			_, data := getFrameNameAndData(f.Body)
+			name, data := getFrameNameAndData(f.Body)
+			if string(name) != frameName {
+				continue
+			}
+
 			err := frameStruct.Unmarshal(data)
 			if err != nil {
 				logrus.Warn(err)
 				continue
 			}
 
-			if frameStruct.version != 2 {
-				err = fmt.Errorf("bad tag version: %d", frameStruct.version)
+			if err = frameStruct.checkVersion(); err != nil {
 				logrus.Warn(err)
 				continue
 			}
@@ -131,6 +137,78 @@ func ProcessMP3Track(path string) (track *tracks.Track, err error) {
 		logrus.Error(err)
 		return
 	}
+
+	return
+}
+
+func UpdateMP3Track(track *tracks.Track) (err error) {
+	// сделаем путь файла относительным, от текущей директории
+	trackPath := path.Join(dir, track.FilePath)
+
+	tag, err := id3v2.Open(trackPath, id3v2.Options{Parse: true})
+	if err != nil {
+		err = fmt.Errorf("id3v2.Open error for %s: %s", trackPath, err)
+		logrus.Error(err)
+		return
+	}
+
+	tag.AddTextFrame(tag.CommonID("Track number/Position in set"), tag.DefaultEncoding(), fmt.Sprintf("%d\x00", track.AlbumTrackNumber))
+	tag.SetAlbum(track.Album)
+	tag.SetArtist(track.Artist)
+	tag.SetTitle(track.Title)
+
+	frames := tag.GetFrames("PRIV")
+
+	for i, frame := range frames {
+		// тут ошибки не критичны, трек сохранится в БД "как есть" без информации - его можно будет редактировать
+		f, ok := frame.(id3v2.UnknownFrame)
+		if ok {
+			frameStruct := private_ext_frame_data{}
+			name, data := getFrameNameAndData(f.Body)
+			if string(name) != "GuitarJam" {
+				continue
+			}
+
+			err := frameStruct.Unmarshal(data)
+			if err != nil {
+				logrus.Warn(err)
+				continue
+			}
+
+			if err = frameStruct.checkVersion(); err != nil {
+				logrus.Warn(err)
+				continue
+			}
+
+			trackData := &private_ext_frame_data_v3{}
+
+			trackData.SetKey(track.Key)
+			trackData.SetMode(track.Mode)
+			trackData.SetBPM(track.BPM)
+			trackData.SetBPI(track.BPI)
+			trackData.SetLoopStart(track.LoopStart)
+			trackData.SetLoopEnd(track.LoopEnd)
+
+			frameStruct.data = trackData
+
+			bts, err := frameStruct.Marshal()
+			if err != nil {
+				return err
+			}
+
+			f.Body = append([]byte(frameName), 0)
+			f.Body = append(f.Body, bts...)
+			frames[i] = f
+			break
+		}
+	}
+
+	tag.DeleteFrames("PRIV")
+	for _, frame := range frames {
+		tag.AddFrame("PRIV", frame)
+	}
+
+	err = tag.Save()
 
 	return
 }

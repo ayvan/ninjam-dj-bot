@@ -39,7 +39,7 @@ func NewJamDB(file string) (jamDB *JamDB, err error) {
 		return
 	}
 
-	if err = db.AutoMigrate(&Track{}, &Tag{}, &Playlist{}, &PlaylistTrack{}, &Author{}).Error; err != nil {
+	if err = db.AutoMigrate(&Track{}, &Tag{}, &Playlist{}, &Author{}).Error; err != nil {
 		err = fmt.Errorf("failed to migrate database: %s", err)
 		return
 	}
@@ -100,18 +100,7 @@ func (jdb *JamDB) Track(id uint) (res *Track, err error) {
 }
 
 func (jdb *JamDB) TrackUpdate(id uint, req *Track) (res *Track, err error) {
-	track, err := jdb.Track(uint(id))
-	if err != nil {
-		return
-	}
-
-	// данные модели ORM, путь к файлу, число проигрываний менять запрещено,
-	// остальное - разрешено
-	req.Model = track.Model
-	req.FilePath = track.FilePath
-	req.Played = track.Played
-
-	db := jdb.db.Omit("tags", "author").Save(&req)
+	db := jdb.db.Omit("tags", "author", "integrated", "range", "peak", "shortterm", "momentary", "length").Save(&req)
 	if db.Error != nil {
 		err = db.Error
 		return
@@ -199,13 +188,13 @@ func (jdb *JamDB) TrackByPath(path string) (res *Track, err error) {
 
 func (jdb *JamDB) Playlists() (playlists []*Playlist, err error) {
 	playlists = []*Playlist{}
-	err = jdb.db.Preload("Tracks").Find(&playlists).Error
+	err = jdb.db.Find(&playlists).Error
 	return
 }
 
 func (jdb *JamDB) Playlist(id uint) (res *Playlist, err error) {
 	playlist := &Playlist{}
-	dbRes := jdb.db.Preload("Tracks").First(&playlist, id)
+	dbRes := jdb.db.First(&playlist, id)
 	if dbRes.RecordNotFound() {
 		err = ErrorNotFound
 		return
@@ -225,8 +214,7 @@ func (jdb *JamDB) PlaylistUpdate(id uint, req *Playlist) (res *Playlist, err err
 		return
 	}
 
-	// данные модели ORM, путь к файлу, число проигрываний менять запрещено,
-	// остальное - разрешено
+	// данные модели ORM и JSON треков менять запрещено
 	req.Model = playlist.Model
 
 	db := jdb.db.Save(&req)
