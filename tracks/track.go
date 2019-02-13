@@ -1,5 +1,7 @@
 package tracks
 
+import "fmt"
+
 const (
 	KeyUnknown = iota
 	KeyA
@@ -23,7 +25,7 @@ const (
 )
 
 const (
-	KeyNameUnknown = "Unknown"
+	KeyNameUnknown = "unknown"
 	KeyNameA       = "A"
 	KeyNameASharp  = "A#"
 	KeyNameB       = "B"
@@ -102,4 +104,17 @@ type Tag struct {
 
 func (t Track) KeyString() string {
 	return KeysMapping[t.Key] + " " + ModesMapping[t.Mode]
+}
+
+func (t Track) String() string {
+	trackName := fmt.Sprintf("%s (key %s, %d BPM)", t.Title, t.KeyString(), t.BPM)
+
+	if t.Artist != "" {
+		trackName += fmt.Sprintf(" by %s", t.Artist)
+	}
+	if t.Album != "" {
+		trackName += fmt.Sprintf(" (%s)", t.Album)
+	}
+
+	return trackName
 }

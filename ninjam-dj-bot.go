@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -25,8 +24,6 @@ import (
 
 func main() {
 	config.Init()
-	dj.Start()
-	defer dj.Stop()
 
 	if config.Get().DaemonMode {
 		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
@@ -79,26 +76,15 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	//jp := dj.NewJamPlayer(dir, bot, hostconfig)
+	jp := dj.NewJamPlayer(dir, bot, hostconfig)
 
 	tracks_sync.Init(dir, jamDB)
-	//track, err := tracks_sync.AnalyzeMP3Track(path.Join(dir, "Dynamic Drums.mp3"))
-	//if err != nil {
-	//	logrus.Fatal(err)
-	//}
-	//
-	//jp.LoadTrack(track)
-	//jp.SetRepeats(100)
 
-	//bot.OnSuccessAuth(func() {
-	//	bot.ChannelInit("BackingTrack")
-	//
-	//	msg := fmt.Sprintf("bpm %d", track.BPM)
-	//	bot.SendAdminMessage(msg)
-	//	msg = fmt.Sprintf("bpi %d", track.BPI)
-	//	bot.SendAdminMessage(msg)
-	//	jp.Start()
-	//})
+	bot.OnSuccessAuth(func() {
+		bot.ChannelInit("BackingTrack")
+	})
+
+	jamManager := dj.NewJamManager(jamDB, jp, bot)
 
 	// инициализируем глобальный канал завершения горутин
 	sigChan := make(chan bool, 1)
@@ -166,63 +152,12 @@ f:
 					logrus.Info("Users after part: ", len(bot.Users()), bot.Users())
 					if len(bot.Users()) == 1 {
 						logrus.Info("Stop player: only 1 user on server, it must be jamtrack bot")
-						dj.StopMP3()
+						// TODO dj.StopMP3()
 					}
 				}()
 			case models.MSG:
-				r := regexp.MustCompile(`^dj\s+(\w+)\s*([a-zA-Z#]{0,3})`)
-				s := r.FindStringSubmatch(msg.Message.Text)
-
-				command := ""
-				arg := ""
-
-				if len(s) > 0 {
-					command = s[1]
-					if len(s) > 2 {
-						arg = s[2]
-					}
-				}
-
-				switch command {
-				case "help":
-					msg := fmt.Sprintf("DJ Bot commands: \n")
-					msg += fmt.Sprintf("%s random - start random track\n", bot.UserName())
-					msg += fmt.Sprintf("%s random Am - start random track with key\n", bot.UserName())
-					msg += fmt.Sprintf("%s stop - stop track\n", bot.UserName())
-					msg += fmt.Sprintf("%s keys - get track counts by keys", bot.UserName())
-					bot.SendMessage(msg)
-				case "keys":
-					msg := fmt.Sprintf("Tracks count by keys: \n")
-					for key, c := range dj.TracksCount() {
-						msg += fmt.Sprintf("%s - %d tracks\n", key, c)
-					}
-					bot.SendMessage(msg)
-				case "stop":
-					msg := "Stop player"
-					bot.SendMessage(msg)
-					bot.SendAdminMessage("bpm 100")
-					dj.StopMP3()
-				case "random":
-					if arg == "" {
-						msg, bpm := dj.Random()
-						bot.SendMessage(msg)
-						logrus.Info(fmt.Sprintf("Random Command: %s %s | %s", command, arg, msg))
-						if bpm != "" {
-							msg = "bpm " + bpm
-							bot.SendAdminMessage(msg)
-						}
-					} else {
-						msg, bpm := dj.RandomKey(arg)
-						bot.SendMessage(msg)
-
-						logrus.Info(fmt.Sprintf("RandomKey Command: %s %s | %s", command, arg, msg))
-
-						if bpm != "" {
-							msg = "bpm " + bpm
-							bot.SendAdminMessage(msg)
-						}
-					}
-				}
+				msg := jamManager.Command(msg.Message.Text)
+				bot.SendMessage(msg)
 			}
 		}
 	}

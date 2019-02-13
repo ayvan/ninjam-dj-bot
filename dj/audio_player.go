@@ -34,7 +34,7 @@ type JamPlayer struct {
 	sampleRate int
 	bpm        uint
 	bpi        uint
-	repeats    int
+	repeats    uint
 	ninjamBot  IntervalBeginWriter
 	stop       chan bool
 	playing    bool
@@ -51,6 +51,7 @@ type AudioInterval struct {
 	index        int // index of current audio data block
 }
 
+// TODO получать сообщения о смене bpm/bpi и форсить их назад
 func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
 	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
 }
@@ -122,7 +123,7 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 	lv2host.Activate(jp.host)
 }
 
-func (jp *JamPlayer) SetRepeats(repeats int) {
+func (jp *JamPlayer) SetRepeats(repeats uint) {
 	jp.repeats = repeats
 }
 
@@ -270,7 +271,7 @@ func (jp *JamPlayer) Start() error {
 
 			if endPos >= loopEndPos && jp.repeats > 0 {
 				play = true // если ранее получили флаг остановки - значит снимем его, мы ушли в очередной цикл
-				var loops int
+				var loops uint
 				deinterleavedSamples, currentPos, loops = loop(samplesBuffer, currentPos, loopStartPos, loopEndPos, intervalSamples, channels)
 
 				jp.repeats -= loops
@@ -376,7 +377,7 @@ func timeToSamples(t time.Duration, sampleRate int) int {
 
 }
 
-func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float32, ncPos int, loops int) {
+func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float32, ncPos int, loops uint) {
 	ncPos = cPos
 	l := length
 

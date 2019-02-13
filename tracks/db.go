@@ -29,7 +29,7 @@ type JamDB struct {
 	db *gorm.DB
 }
 
-var ErrorNotFound = fmt.Errorf("track not found")
+var ErrorNotFound = fmt.Errorf("not found")
 
 func NewJamDB(file string) (jamDB *JamDB, err error) {
 	var db *gorm.DB
