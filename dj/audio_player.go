@@ -178,6 +178,11 @@ func (jp *JamPlayer) Start() error {
 
 	logrus.Debugf("Loop start pos: %d | Loop End Pos: %d", loopStartPos, loopEndPos)
 
+	// не позволяем повторы если нет метки конца цикла либо она меньше/равна метке начала цикла
+	if loopEndPos <= loopStartPos {
+		jp.repeats = 0
+	}
+
 	jp.playing = true
 
 	samplesBuffer := make([][]float32, 2)
