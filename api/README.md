@@ -137,7 +137,9 @@ HTTP codes:
 Example request:
 ```json
 {
-  "name":"Burillo"
+  "name":"Burillo",
+  "url":"",
+  "description":""
 }
 ```
 
@@ -185,7 +187,6 @@ HTTP codes:
 Example request:
 ```json
 {
-  "id": 1,
   "name":"Burillo",
   "url":"",
   "description":""  
