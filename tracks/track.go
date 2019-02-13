@@ -66,7 +66,7 @@ var ModesMapping = map[uint]string{
 
 type Track struct {
 	Model
-	FilePath string `json:"file_path"`
+	FilePath string `json:"-"`
 
 	Title            string `json:"title"`
 	Artist           string `json:"artist"`

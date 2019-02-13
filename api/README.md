@@ -111,7 +111,6 @@ HTTP codes:
 Example request:
 ```json
 {
-  "file_path": "DrumLoop.mp3",
   "title": "Drum Loop",
   "artist": "Burillo",
   "album": "Best of PornHub",
@@ -124,7 +123,13 @@ Example request:
       "id":3
     }
   ],
-  "author_id":1
+  "author_id":1,
+  "loop_start": 1827878,
+  "loop_end": 16373318,
+  "bpm": 132,
+  "bpi": 16,
+  "key": 7,
+  "mode": 1
 }
 ```
 
@@ -232,6 +237,10 @@ Example request:
 
 **GET /v1/playlists/**
 
+Поле "target_track_time" содержит "шаблонное" время трека в плейлисте, в секундах. Когда в существующий плейлист
+добавляется трек, можно автоматически рассчитать число повторов, взяв target_track_time из плейлиста и подогнав
+время трека (с повторами) под это время.
+
 HTTP codes:
 200
 400
@@ -242,7 +251,7 @@ Example response:
   "id": 4,
   "name": "test 2",
   "description": "",
-  "track_time": 0,
+  "target_track_time": 0,
   "tracks": [
     {
       "track_id": 1,
@@ -275,7 +284,7 @@ Example response:
   "id": 4,
   "name": "Playlist 4",
   "description": "",
-  "track_time": 0,
+  "target_track_time": 0,
   "tracks": [
     {
       "track_id": 1,
@@ -300,7 +309,7 @@ Example request:
 {
   "name": "My New Playlist",
   "description": "",
-  "track_time": 0,
+  "target_track_time": 0,
   "tracks": [
     {
       "track_id":1,

@@ -19,10 +19,10 @@ type Playlist struct {
 	Model
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	// TrackTime время трека в секундах, по-умолчанию для добавляемого трека, на его основе будет рассчитано число повторов трека
-	TrackTime  uint            `json:"track_time"`
-	Tracks     []PlaylistTrack `json:"tracks"`
-	TracksJSON []byte          `json:"-"`
+	// TargetTrackTime время трека в секундах, по-умолчанию для добавляемого трека, на его основе будет рассчитано число повторов трека
+	TargetTrackTime uint            `json:"target_track_time"`
+	Tracks          []PlaylistTrack `json:"tracks"`
+	TracksJSON      []byte          `json:"-"`
 }
 
 func (ps PlaylistSlice) String() (res string) {
