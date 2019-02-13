@@ -3,6 +3,7 @@ package dj
 import (
 	"github.com/Ayvan/ninjam-dj-bot/config"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"math/rand"
@@ -10,10 +11,11 @@ import (
 )
 
 const (
-	messageAlreadyStarted       = "playing already started"
-	messageCantStartRandomTrack = "can't start random track"
-
+	messageAlreadyStarted           = "playing already started"
+	messageCantStartRandomTrack     = "can't start random track"
 	messageUnableToRecognizeCommand = "unable to recognize command, please use \"dj help\" to get the list and format of the available commands"
+
+	errorGeneral = "an error has occurred"
 )
 
 var p *message.Printer
@@ -22,6 +24,7 @@ func init() {
 	message.SetString(language.Russian, messageAlreadyStarted, "воспроизведение уже запущено")
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
 	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте \"dj help\" для получения списка и формата доступных команд")
+	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
 
 	p = message.NewPrinter(config.Language)
 }
@@ -91,7 +94,8 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 	count, err := jm.jamDB.CountTracks()
 
 	if err != nil {
-		return // TODO msg
+		logrus.Error(err)
+		return p.Sprint(errorGeneral)
 	}
 
 	randSource := rand.NewSource(time.Now().UnixNano())
@@ -108,10 +112,11 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 		id := uint(randomizer.Intn(int(count)))
 
 		track, err = jm.jamDB.Track(id)
-		if err != nil && err == tracks.ErrorNotFound {
+		if err == tracks.ErrorNotFound {
 			continue
 		} else if err != nil {
-			return //TODO msg
+			logrus.Error(err)
+			return p.Sprint(errorGeneral)
 		}
 
 		if command.Key != 0 {
@@ -154,7 +159,8 @@ func (jm *JamManager) Start() (msg string) {
 	jm.playing = true
 	err := jm.jamPlayer.Start()
 	if err != nil {
-		// todo msg
+		logrus.Error(err)
+		return p.Sprint(errorGeneral)
 	}
 	return
 }
