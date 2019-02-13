@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/luci/go-render/render"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -11,10 +12,13 @@ import (
 	"runtime"
 )
 
+var Language language.Tag
+
 type AppConfig struct {
 	AppPath       string
 	AppConfigPath string
 	AppPidPath    string
+	Lang          string       `yaml:"lang"`
 	HTTPPort      string       `yaml:"http_port"`
 	TracksDir     string       `yaml:"tracks_dir"`
 	DBFile        string       `yaml:"db_file"`
@@ -83,6 +87,17 @@ func Init() {
 	err = yaml.Unmarshal(content, appConfig)
 	if err != nil {
 		logrus.Fatalf("Yaml file %s parsing error: %v", appConfig.AppConfigPath, err)
+	}
+
+	if len(appConfig.Lang) != 0 {
+		t, err := language.Parse(appConfig.Lang)
+		if err != nil {
+			logrus.Fatalf("Language name \"%s\" parsing error: %s", appConfig.Lang, err)
+		}
+
+		Language = t
+	} else {
+		Language = language.English
 	}
 
 	setLogger(appConfig.LogLevel, appConfig.LogFile)

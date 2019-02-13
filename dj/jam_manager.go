@@ -1,29 +1,50 @@
 package dj
 
 import (
-	"fmt"
+	"github.com/Ayvan/ninjam-dj-bot/config"
 	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"math/rand"
 	"time"
 )
 
+const (
+	messageAlreadyStarted       = "playing already started"
+	messageCantStartRandomTrack = "can't start random track"
+
+	messageUnableToRecognizeCommand = "unable to recognize command, please use \"dj help\" to get the list and format of the available commands"
+)
+
+var p *message.Printer
+
+func init() {
+	message.SetString(language.Russian, messageAlreadyStarted, "воспроизведение уже запущено")
+	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
+	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте \"dj help\" для получения списка и формата доступных команд")
+
+	p = message.NewPrinter(config.Language)
+}
+
 type Manager interface {
 	Playlists() []tracks.Playlist
-	PlayRandom(command JamCommand) error
-	StartPlaylist(id uint) error
-	StartTrack(id uint) error
-	Stop()
+	PlayRandom(command JamCommand) string
+	StartPlaylist(id uint) string
+	StartTrack(id uint) string
+	Stop() string
 }
 
 var _ Manager = &JamManager{} // check interface implementation
 
+type playingMode uint
+
 const (
-	playingTrack = iota + 1
+	playingTrack playingMode = iota + 1
 	playingPlaylist
 )
 
 type JamManager struct {
-	playingMode uint // играем трек или плейлист
+	playingMode playingMode // playing single track or playing list of tracks
 	playlistID  uint
 	trackID     uint
 	playing     bool // играем или нет в данный момент
@@ -64,13 +85,13 @@ func (jm *JamManager) Playlists() (res []tracks.Playlist) {
 	return
 }
 
-func (jm *JamManager) PlayRandom(command JamCommand) (err error) {
+func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 	jm.Stop()
 
 	count, err := jm.jamDB.CountTracks()
 
 	if err != nil {
-		return
+		return // TODO msg
 	}
 
 	randSource := rand.NewSource(time.Now().UnixNano())
@@ -81,7 +102,7 @@ func (jm *JamManager) PlayRandom(command JamCommand) (err error) {
 	for {
 		i++
 		if i > 1000 {
-			err = fmt.Errorf("не удалось запустить случайный трек")
+			msg = p.Sprint(messageCantStartRandomTrack)
 			return
 		}
 		id := uint(randomizer.Intn(int(count)))
@@ -90,7 +111,7 @@ func (jm *JamManager) PlayRandom(command JamCommand) (err error) {
 		if err != nil && err == tracks.ErrorNotFound {
 			continue
 		} else if err != nil {
-			return
+			return //TODO msg
 		}
 
 		if command.Key != 0 {
@@ -109,29 +130,32 @@ func (jm *JamManager) PlayRandom(command JamCommand) (err error) {
 	jm.playingMode = playingTrack
 
 	jm.Start()
+	return // TODO msg
+}
+
+func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 	return
 }
 
-func (jm *JamManager) StartPlaylist(id uint) (err error) {
+func (jm *JamManager) StartTrack(id uint) (msg string) {
 	return
 }
 
-func (jm *JamManager) StartTrack(id uint) (err error) {
-	return
-}
-
-func (jm *JamManager) Stop() {
+func (jm *JamManager) Stop() (msg string) {
 	jm.jamPlayer.Stop()
 	jm.playing = false
-	return
+	return // todo msg
 }
 
-func (jm *JamManager) Start() (err error) {
+func (jm *JamManager) Start() (msg string) {
 	if jm.playing == true {
-		return fmt.Errorf("проигрывание уже запущено")
+		return p.Sprint(messageAlreadyStarted)
 	}
 	jm.playing = true
-	err = jm.jamPlayer.Start()
+	err := jm.jamPlayer.Start()
+	if err != nil {
+		// todo msg
+	}
 	return
 }
 
@@ -140,18 +164,18 @@ func (jm *JamManager) Command(chatCommand string) string {
 
 	switch command.Command {
 	case CommandRandom:
-		jm.PlayRandom(command)
+		return jm.PlayRandom(command)
 	case CommandTrack:
 	case CommandPlaylist:
 	case CommandStop:
-		jm.Stop()
+		return jm.Stop()
 	case CommandPlay:
-		jm.Start()
+		return jm.Start()
 	case CommandNext:
 	case CommandPrev:
 	case CommandPlaying:
 	default:
-		return `невозможно распознать команду, используйте "help" для получения списка и формата доступных команд`
+		return p.Sprint(messageUnableToRecognizeCommand)
 	}
 
 	return ""
