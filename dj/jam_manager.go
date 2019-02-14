@@ -89,19 +89,21 @@ type JamManager struct {
 }
 
 type JamChatCommand struct {
-	Command string
-	Param   string
-	Tags    []string
-	ID      uint
+	Command  string
+	Param    string
+	Tags     []string
+	ID       uint
+	Duration time.Duration
 }
 
 type JamCommand struct {
-	Command uint
-	Param   string
-	Key     uint
-	Mode    uint
-	ID      uint
-	Tags    []uint
+	Command  uint
+	Param    string
+	Key      uint
+	Mode     uint
+	ID       uint
+	Tags     []uint
+	Duration time.Duration
 }
 
 func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, sendMessage JamChatBot) *JamManager {
@@ -154,11 +156,32 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 				continue
 			}
 		}
+		if len(command.Tags) > 0 {
+			found := false
+		tags:
+			for _, tag := range track.Tags {
+				for _, tID := range command.Tags {
+					if tag.ID == tID {
+						found = true
+						break tags
+					}
+				}
+			}
+			if !found {
+				continue
+			}
+		}
 		break
 	}
 
 	jm.jamPlayer.LoadTrack(track)
-	jm.jamPlayer.SetRepeats(0)
+	var repeats uint
+
+	if command.Duration != 0 {
+		repeats = jm.countRepeats(track, command.Duration)
+	}
+
+	jm.jamPlayer.SetRepeats(repeats)
 
 	jm.track = track
 	jm.playlist = nil
@@ -228,6 +251,7 @@ func (jm *JamManager) Start() (msg string) {
 		logrus.Error(err)
 		return p.Sprint(errorGeneral)
 	}
+	// TODO print track time
 	return p.Sprintf(messagePlayingTrack, jm.track)
 }
 
@@ -331,4 +355,29 @@ func (jm *JamManager) onStop() {
 	}
 
 	jm.playing = false
+}
+
+func (jm *JamManager) countRepeats(track *tracks.Track, duration time.Duration) uint {
+	if duration == 0 && track.LoopEnd <= track.LoopStart {
+		return 0
+	}
+
+	trackDuration := time.Duration(track.Length) * time.Microsecond
+
+	if trackDuration > duration {
+		return 0
+	}
+
+	durationMicroS := uint64(duration / time.Microsecond)
+
+	loopDurationMicroS := track.LoopEnd - track.LoopStart
+
+	outroDurationMicroS := track.Length - track.LoopEnd
+	introDurationMicroS := track.LoopStart
+
+	durationMicroS = durationMicroS - introDurationMicroS - outroDurationMicroS
+
+	repeats := uint(durationMicroS / loopDurationMicroS)
+
+	return repeats
 }

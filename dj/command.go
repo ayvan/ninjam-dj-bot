@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -45,7 +46,7 @@ func commandByName(name string) uint {
 	return commandMap[strings.ToLower(name)]
 }
 
-var commandRegexp = regexp.MustCompile(`(\w+)[ \t]*(\w*)[ \t]*(?:\[([\w, ]+)\])*`)
+var commandRegexp = regexp.MustCompile(`(\w+)[ \t]*(\w*)[ \t]*(?:\[([\w, ]+)\])*[\t ]*(?:\(([\w ]+)\))*`)
 
 func CommandParse(command string) (jamCommand JamChatCommand) {
 	commandStrings := commandRegexp.FindStringSubmatch(command)
@@ -59,12 +60,12 @@ func CommandParse(command string) (jamCommand JamChatCommand) {
 	jamCommand.Command = strings.Trim(commandStrings[1], " ")
 
 	if len(commandStrings) > 2 {
-		commParam1 := strings.Trim(commandStrings[2], " ")
+		commParam := strings.Trim(commandStrings[2], " ")
 
-		if id, err := strconv.Atoi(commParam1); err == nil {
+		if id, err := strconv.Atoi(commParam); err == nil {
 			jamCommand.ID = uint(id)
 		} else {
-			jamCommand.Param = commParam1
+			jamCommand.Param = commParam
 		}
 	}
 
@@ -77,6 +78,14 @@ func CommandParse(command string) (jamCommand JamChatCommand) {
 				tags[i] = strings.Trim(tag, " ")
 			}
 			jamCommand.Tags = tags
+		}
+	}
+	if len(commandStrings) > 4 {
+		commParam := strings.Trim(commandStrings[4], " ")
+		commParam = strings.Replace(commParam, " ", "", -1)
+		duration, err := time.ParseDuration(commParam)
+		if err == nil {
+			jamCommand.Duration = duration
 		}
 	}
 
@@ -93,6 +102,7 @@ func Command(jamChatCommand JamChatCommand) (command JamCommand) {
 	command.Mode = keyMode.Mode
 
 	command.ID = jamChatCommand.ID
+	command.Duration = jamChatCommand.Duration
 
 	return
 }
