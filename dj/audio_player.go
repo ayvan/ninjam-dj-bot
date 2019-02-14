@@ -3,7 +3,7 @@ package dj
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/azul3d/engine/audio"
 	"github.com/burillo-se/lv2host-go/lv2host"
 	"github.com/burillo-se/lv2hostconfig"
@@ -160,7 +160,6 @@ func (jp *JamPlayer) Start() error {
 		return nil
 	}
 	if jp.source == nil {
-		fmt.Println("no source detected")
 		return fmt.Errorf("no source detected")
 	}
 
@@ -419,4 +418,11 @@ func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float3
 	res = s[ncPos : ncPos+length]
 
 	return
+}
+
+func (jp *JamPlayer) OnServerConfigChange(bpm, bpi uint) {
+	if jp.Playing() && jp.track != nil && jp.track.BPM != bpm && jp.track.BPI != bpi {
+		jp.setBPM(jp.track.BPM)
+		jp.setBPI(jp.track.BPI)
+	}
 }

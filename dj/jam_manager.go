@@ -1,8 +1,8 @@
 package dj
 
 import (
-	"github.com/Ayvan/ninjam-dj-bot/config"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/config"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -16,6 +16,13 @@ const (
 	messageUnableToRecognizeCommand = "unable to recognize command, please use \"dj help\" to get the list and format of the available commands"
 	messagePlayingTrack             = "playing track %s"
 	messagePlaylistStarted          = "playlist %s started"
+	helpMessage                     = "DJ Bot commands: \n" +
+		"%s random - start random track\n" +
+		"%s random Am - start random track with key\n" +
+		"%s stop - stop track\n" +
+		"%s playlist 12 - start playlist by ID\n" +
+		"%s next - next track (only if playlist playing)\n" +
+		"%s playing - show current track/playlist info"
 
 	errorGeneral          = "an error has occurred"
 	errorTrackNotSelected = "track not selected, please select track"
@@ -23,14 +30,6 @@ const (
 	errorPlaylistNotFound = "playlist %d not found"
 	errorPlaylistIsEmpty  = "playlist %d is empty"
 )
-
-// TODO
-//	msg := fmt.Sprintf("DJ Bot commands: \n")
-//	msg += fmt.Sprintf("%s random - start random track\n", bot.UserName())
-//	msg += fmt.Sprintf("%s random Am - start random track with key\n", bot.UserName())
-//	msg += fmt.Sprintf("%s stop - stop track\n", bot.UserName())
-//	msg += fmt.Sprintf("%s keys - get track counts by keys", bot.UserName())
-//	bot.SendMessage(msg)
 
 var p *message.Printer
 
@@ -45,6 +44,13 @@ func init() {
 	message.SetString(language.Russian, errorTrackNotFound, "трек %d не найден")
 	message.SetString(language.Russian, errorPlaylistNotFound, "плейлист %d не найден")
 	message.SetString(language.Russian, errorPlaylistIsEmpty, "плейлист %d не содержит треков")
+	message.SetString(language.Russian, helpMessage, "Команды DJ-бота : \n"+
+		"%s random - зпаустить случайный трек\n"+
+		"%s random Am - запустить случайный трек с заданной тональностью\n"+
+		"%s stop - остановить трек\n"+
+		"%s playlist 12 - запустить плейлист с заданным ID\n"+
+		"%s next - следующий трек (только если играет плейлист)\n"+
+		"%s playing - показать информацию о текущем треке/плейлисте")
 
 	p = message.NewPrinter(config.Language)
 }
@@ -66,8 +72,9 @@ const (
 	playingPlaylist
 )
 
-type SendMessager interface {
+type JamChatBot interface {
 	SendMessage(string)
+	UserName() string
 }
 
 type JamManager struct {
@@ -76,9 +83,9 @@ type JamManager struct {
 	track       *tracks.Track
 	playing     bool // играем или нет в данный момент
 
-	jamPlayer *JamPlayer
-	jamDB     tracks.JamTracksDB
-	messager  SendMessager
+	jamPlayer  *JamPlayer
+	jamDB      tracks.JamTracksDB
+	jamChatBot JamChatBot
 }
 
 type JamChatCommand struct {
@@ -97,11 +104,11 @@ type JamCommand struct {
 	Tags    []uint
 }
 
-func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, sendMessage SendMessager) *JamManager {
+func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, sendMessage JamChatBot) *JamManager {
 	jm := &JamManager{
-		jamPlayer: player,
-		jamDB:     jamDB,
-		messager:  sendMessage,
+		jamPlayer:  player,
+		jamDB:      jamDB,
+		jamChatBot: sendMessage,
 	}
 	player.SetOnStop(jm.onStop)
 	return jm
@@ -224,6 +231,18 @@ func (jm *JamManager) Start() (msg string) {
 	return p.Sprintf(messagePlayingTrack, jm.track)
 }
 
+func (jm *JamManager) Help() (msg string) {
+	msg = p.Sprintf(helpMessage,
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName())
+
+	return
+}
+
 func (jm *JamManager) Command(chatCommand string) string {
 	command := Command(CommandParse(chatCommand))
 
@@ -240,6 +259,8 @@ func (jm *JamManager) Command(chatCommand string) string {
 	case CommandNext:
 		return jm.Next()
 	case CommandPrev:
+	case CommandHelp:
+		return jm.Help()
 	case CommandPlaying:
 	default:
 		return p.Sprint(messageUnableToRecognizeCommand)
@@ -302,7 +323,7 @@ func (jm *JamManager) onStop() {
 
 		msg, ok := jm.next()
 		if ok {
-			jm.messager.SendMessage(msg)
+			jm.jamChatBot.SendMessage(msg)
 			return
 		}
 

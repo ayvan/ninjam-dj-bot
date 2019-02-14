@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/Ayvan/ninjam-dj-bot/config"
-	"github.com/Ayvan/ninjam-dj-bot/helpers"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
-	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
+	"github.com/ayvan/ninjam-dj-bot/config"
+	"github.com/ayvan/ninjam-dj-bot/helpers"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/labstack/echo"
 	"io"
 	"net/http"

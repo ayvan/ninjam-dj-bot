@@ -2,7 +2,7 @@ package dj
 
 import (
 	"fmt"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"strings"
 )
 

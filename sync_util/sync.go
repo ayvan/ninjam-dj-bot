@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
-	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/sirupsen/logrus"
 	"os"
 	"path"

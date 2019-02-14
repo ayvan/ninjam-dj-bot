@@ -2,7 +2,7 @@ package tracks_sync
 
 import (
 	"fmt"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/bogem/id3v2"
 	"github.com/burillo-se/bs1770wrap"
 	"github.com/sirupsen/logrus"

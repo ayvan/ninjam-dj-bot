@@ -2,20 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/Ayvan/ninjam-chatbot/models"
-	"github.com/Ayvan/ninjam-chatbot/ninjam-bot"
-	"github.com/Ayvan/ninjam-dj-bot/api"
-	"github.com/Ayvan/ninjam-dj-bot/config"
-	"github.com/Ayvan/ninjam-dj-bot/dj"
-	"github.com/Ayvan/ninjam-dj-bot/tracks"
-	"github.com/Ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/VividCortex/godaemon"
+	"github.com/ayvan/ninjam-chatbot/models"
+	"github.com/ayvan/ninjam-chatbot/ninjam-bot"
+	"github.com/ayvan/ninjam-dj-bot/api"
+	"github.com/ayvan/ninjam-dj-bot/config"
+	"github.com/ayvan/ninjam-dj-bot/dj"
+	"github.com/ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/burillo-se/lv2hostconfig"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -80,9 +81,11 @@ func main() {
 
 	tracks_sync.Init(dir, jamDB)
 
-	bot.OnSuccessAuth(func() {
+	bot.SetOnSuccessAuth(func() {
 		bot.ChannelInit("BackingTrack")
 	})
+
+	bot.SetOnServerConfigChange(jp.OnServerConfigChange)
 
 	jamManager := dj.NewJamManager(jamDB, jp, bot)
 
@@ -156,8 +159,17 @@ f:
 					}
 				}()
 			case models.MSG:
-				msg := jamManager.Command(msg.Message.Text)
-				bot.SendMessage(msg)
+				r := regexp.MustCompile(`^` + bot.UserName() + `\s+(.*)`)
+				s := r.FindStringSubmatch(msg.Message.Text)
+
+				command := ""
+
+				if len(s) > 0 {
+					command = s[1]
+
+					msg := jamManager.Command(command)
+					bot.SendMessage(msg)
+				}
 			}
 		}
 	}

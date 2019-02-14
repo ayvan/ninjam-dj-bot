@@ -16,6 +16,7 @@ const (
 	CommandNext
 	CommandPrev
 	CommandPlaying
+	CommandHelp
 )
 
 var commandAliases = map[uint][]string{
@@ -27,6 +28,7 @@ var commandAliases = map[uint][]string{
 	CommandNext:     {"next"},
 	CommandPrev:     {"prev", "previous"},
 	CommandPlaying:  {"playing", "current", "now"},
+	CommandHelp:     {"help"},
 }
 
 var commandMap = make(map[string]uint)
@@ -43,7 +45,7 @@ func commandByName(name string) uint {
 	return commandMap[strings.ToLower(name)]
 }
 
-var commandRegexp = regexp.MustCompile(`dj\s+(\w+)[ \t]*(\w*)[ \t]*(?:\[([\w, ]+)\])*`)
+var commandRegexp = regexp.MustCompile(`(\w+)[ \t]*(\w*)[ \t]*(?:\[([\w, ]+)\])*`)
 
 func CommandParse(command string) (jamCommand JamChatCommand) {
 	commandStrings := commandRegexp.FindStringSubmatch(command)
