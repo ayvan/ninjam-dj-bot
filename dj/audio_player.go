@@ -87,8 +87,16 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 		logrus.Error(err)
 	}
 
-	jp.setBPM(track.BPM)
-	jp.setBPI(track.BPI)
+	// default values
+	var bpm, bpi uint = 100, 16
+	if track.BPM > 0 {
+		bpm = track.BPM
+	}
+	if track.BPI > 0 {
+		bpi = track.BPI
+	}
+	jp.setBPM(bpm)
+	jp.setBPI(bpi)
 	jp.SetRepeats(0) // по-умолчанию повторы не заданы, их должны будут задать отдельно если запуск происходит из плейлиста
 
 	jp.hostConfig.ValueMap["integrated"] = track.Integrated
@@ -412,7 +420,6 @@ func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float3
 			fors++
 			continue
 		}
-		return
 	}
 
 	res = s[ncPos : ncPos+length]
