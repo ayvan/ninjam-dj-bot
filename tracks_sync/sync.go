@@ -2,6 +2,7 @@ package tracks_sync
 
 import (
 	"fmt"
+	"github.com/ayvan/ninjam-dj-bot/lib"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/bogem/id3v2"
 	"github.com/burillo-se/bs1770wrap"
@@ -93,6 +94,30 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 			track.LoopStart = trackData.LoopStart()
 			track.LoopEnd = trackData.LoopEnd()
 
+		}
+	}
+
+	if track.BPM == 0 || track.Key == 0 {
+		r := regexp.MustCompile(`^([a-zA-Z#]+)___([\d]+)___([\s\S]+)\.mp3$`)
+
+		s := r.FindStringSubmatch(trackPath)
+		if len(s) > 0 {
+			name := s[3]
+			key := s[1]
+			bpm := s[2]
+
+			bpmInt, _ := strconv.Atoi(bpm)
+
+			if track.Title == "" {
+				track.Title = name
+			}
+			if track.Key == 0 {
+				keyMode := lib.KeyModeByName(key)
+				track.Key = keyMode.Key
+			}
+
+			track.BPM = uint(bpmInt)
+			track.BPI = 16
 		}
 	}
 

@@ -1,6 +1,7 @@
 package dj
 
 import (
+	"github.com/ayvan/ninjam-dj-bot/lib"
 	"regexp"
 	"strconv"
 	"strings"
@@ -97,7 +98,7 @@ func Command(jamChatCommand JamChatCommand) (command JamCommand) {
 	command.Command = commandByName(jamChatCommand.Command)
 	command.Param = jamChatCommand.Param
 
-	keyMode := keyModeByName(jamChatCommand.Param)
+	keyMode := lib.KeyModeByName(jamChatCommand.Param)
 	command.Key = keyMode.Key
 	command.Mode = keyMode.Mode
 

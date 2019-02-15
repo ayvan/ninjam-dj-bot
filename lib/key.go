@@ -1,4 +1,4 @@
-package dj
+package lib
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type keyMode struct {
+type KeyMode struct {
 	Key  uint
 	Mode uint
 }
@@ -31,7 +31,7 @@ var modesAliases = map[uint][]string{
 	tracks.ModeMajor: {"major"},
 }
 
-var keysMap = make(map[string]keyMode)
+var keysMap = make(map[string]KeyMode)
 
 func init() {
 	for mode, mAliases := range modesAliases {
@@ -40,13 +40,13 @@ func init() {
 				for _, keyName := range kAliases {
 					name := fmt.Sprintf("%s%s", keyName, modeName)
 					name = strings.ToLower(name)
-					keysMap[name] = keyMode{Mode: mode, Key: key}
+					keysMap[name] = KeyMode{Mode: mode, Key: key}
 				}
 			}
 		}
 	}
 }
 
-func keyModeByName(name string) keyMode {
+func KeyModeByName(name string) KeyMode {
 	return keysMap[strings.ToLower(name)]
 }
