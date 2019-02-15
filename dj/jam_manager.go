@@ -358,7 +358,7 @@ func (jm *JamManager) onStop() {
 }
 
 func (jm *JamManager) countRepeats(track *tracks.Track, duration time.Duration) uint {
-	if duration == 0 && track.LoopEnd <= track.LoopStart {
+	if duration == 0 || track.LoopEnd <= track.LoopStart {
 		return 0
 	}
 
