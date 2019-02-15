@@ -28,7 +28,7 @@ var keysAliases = map[uint][]string{
 
 var modesAliases = map[uint][]string{
 	tracks.ModeMinor: {"m", "minor"},
-	tracks.ModeMajor: {"major"},
+	tracks.ModeMajor: {"", "major"},
 }
 
 var keysMap = make(map[string]KeyMode)
