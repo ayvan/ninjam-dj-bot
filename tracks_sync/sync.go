@@ -98,9 +98,10 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 	}
 
 	if track.BPM == 0 || track.Key == 0 {
+		_, fileName := path.Split(trackPath)
 		r := regexp.MustCompile(`^([a-zA-Z#]+)___([\d]+)___([\s\S]+)\.mp3$`)
 
-		s := r.FindStringSubmatch(trackPath)
+		s := r.FindStringSubmatch(fileName)
 		if len(s) > 0 {
 			name := s[3]
 			key := s[1]
@@ -108,9 +109,7 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 
 			bpmInt, _ := strconv.Atoi(bpm)
 
-			if track.Title == "" {
-				track.Title = name
-			}
+			track.Title = name
 			if track.Key == 0 {
 				keyMode := lib.KeyModeByName(key)
 				track.Key = keyMode.Key
