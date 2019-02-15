@@ -110,10 +110,9 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 			bpmInt, _ := strconv.Atoi(bpm)
 
 			track.Title = name
-			if track.Key == 0 {
-				keyMode := lib.KeyModeByName(key)
-				track.Key = keyMode.Key
-			}
+			keyMode := lib.KeyModeByName(key)
+			track.Key = keyMode.Key
+			track.Mode = keyMode.Mode
 
 			track.BPM = uint(bpmInt)
 			track.BPI = 16
