@@ -53,12 +53,15 @@ func AnalyzeMP3Track(trackPath string) (track *tracks.Track, err error) {
 	num := strings.Trim(tag.GetTextFrame(tag.CommonID("Track number/Position in set")).Text, "\x00")
 
 	trackNumber, _ = strconv.Atoi(num)
+	title := strings.Trim(tag.Title(), fmt.Sprintf("\x00 \n"))
+	artist := strings.Trim(tag.Artist(), fmt.Sprintf("\x00 \n"))
+	album := strings.Trim(tag.Album(), fmt.Sprintf("\x00 \n"))
 
 	track = &tracks.Track{
 		FilePath:         relativePath,
-		Title:            tag.Title(),
-		Artist:           tag.Artist(),
-		Album:            tag.Album(),
+		Title:            title,
+		Artist:           artist,
+		Album:            album,
 		AlbumTrackNumber: uint(trackNumber),
 	}
 
