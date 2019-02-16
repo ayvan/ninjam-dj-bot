@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	KeyUnknown = iota
+	KeyUnknown uint = iota
 	KeyA
 	KeyASharp
 	KeyB
@@ -22,7 +22,7 @@ const (
 )
 
 const (
-	ModeUnknown = iota
+	ModeUnknown uint = iota
 	ModeMinor
 	ModeMajor
 )

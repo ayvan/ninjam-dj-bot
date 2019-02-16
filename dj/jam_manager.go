@@ -160,6 +160,11 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 				continue
 			}
 		}
+		if command.Mode != 0 {
+			if track.Mode != command.Mode {
+				continue
+			}
+		}
 		if len(command.Tags) > 0 {
 			found := false
 		tags:
