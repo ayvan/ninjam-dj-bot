@@ -22,9 +22,10 @@ import (
 // channels всегда 2 т.к. используемый MP3-декодер всегда отдаёт звук в стерео
 const channels = 2
 
-type IntervalBeginWriter interface {
+type JamBot interface {
 	IntervalBegin(guid [16]byte, channelIndex uint8)
 	IntervalWrite(guid [16]byte, data []byte, flags uint8)
+	SendAdminMessage(string)
 }
 
 type JamPlayer struct {
@@ -35,7 +36,7 @@ type JamPlayer struct {
 	bpm        uint
 	bpi        uint
 	repeats    uint
-	ninjamBot  IntervalBeginWriter
+	ninjamBot  JamBot
 	stop       chan bool
 	playing    bool
 	host       *lv2host.CLV2Host
@@ -52,7 +53,7 @@ type AudioInterval struct {
 }
 
 // TODO получать сообщения о смене bpm/bpi и форсить их назад
-func NewJamPlayer(tracksPath string, ninjamBot IntervalBeginWriter, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
+func NewJamPlayer(tracksPath string, ninjamBot JamBot, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
 	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
 }
 
@@ -87,16 +88,6 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 		logrus.Error(err)
 	}
 
-	// default values
-	var bpm, bpi uint = 100, 16
-	if track.BPM > 0 {
-		bpm = track.BPM
-	}
-	if track.BPI > 0 {
-		bpi = track.BPI
-	}
-	jp.setBPM(bpm)
-	jp.setBPI(bpi)
 	jp.SetRepeats(0) // по-умолчанию повторы не заданы, их должны будут задать отдельно если запуск происходит из плейлиста
 
 	jp.hostConfig.ValueMap["integrated"] = track.Integrated
@@ -156,10 +147,14 @@ func (jp *JamPlayer) setMP3Source(source string) error {
 }
 
 func (jp *JamPlayer) setBPM(bpm uint) {
+	msg := fmt.Sprintf("bpm %d", bpm)
+	jp.ninjamBot.SendAdminMessage(msg)
 	jp.bpm = bpm
 }
 
 func (jp *JamPlayer) setBPI(bpi uint) {
+	msg := fmt.Sprintf("bpi %d", bpi)
+	jp.ninjamBot.SendAdminMessage(msg)
 	jp.bpi = bpi
 }
 
@@ -167,9 +162,20 @@ func (jp *JamPlayer) Start() error {
 	if jp.playing {
 		return nil
 	}
-	if jp.source == nil {
+	if jp.source == nil || jp.track == nil {
 		return fmt.Errorf("no source detected")
 	}
+
+	// default values
+	var bpm, bpi uint = 100, 16
+	if jp.track.BPM > 0 {
+		bpm = jp.track.BPM
+	}
+	if jp.track.BPI > 0 {
+		bpi = jp.track.BPI
+	}
+	jp.setBPM(bpm)
+	jp.setBPI(bpi)
 
 	jp.stop = make(chan bool, 1)
 
