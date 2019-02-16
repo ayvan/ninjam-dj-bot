@@ -130,6 +130,11 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 		return p.Sprint(errorGeneral)
 	}
 
+	if count == 0 {
+		msg = p.Sprint(messageCantStartRandomTrack)
+		return
+	}
+
 	randSource := rand.NewSource(time.Now().UnixNano())
 	randomizer := rand.New(randSource)
 
