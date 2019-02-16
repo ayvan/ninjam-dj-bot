@@ -326,6 +326,7 @@ func (jm *JamManager) next() (msg string, ok bool) {
 		} else if err != nil {
 			logrus.Error(err)
 			msg = p.Sprint(errorGeneral)
+			return
 		}
 
 		jm.LoadTrack(jm.track)
