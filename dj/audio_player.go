@@ -96,30 +96,6 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 	jp.hostConfig.ValueMap["shortterm"] = track.Shortterm
 	jp.hostConfig.ValueMap["momentary"] = track.Momentary
 
-	err = jp.hostConfig.Evaluate()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	// initialize LV2 plugins
-	jp.host = lv2host.Alloc(float64(jp.sampleRate))
-
-	for i, p := range jp.hostConfig.Plugins {
-		if lv2host.AddPluginInstance(jp.host, p.PluginURI) != 0 {
-			logrus.Errorf("Cannot add plugin: %v\n", p.PluginURI)
-			return
-		}
-		for param, val := range p.Data {
-			if lv2host.SetPluginParameter(jp.host, uint32(i), param, val) != 0 {
-				logrus.Errorf("Cannot set plugin parameter: %v\n", param)
-				lv2host.ListPluginParameters(jp.host, uint32(i))
-				return
-			}
-			logrus.Debugf("Setting '%v' to '%v'\n", param, val)
-		}
-	}
-
-	lv2host.Activate(jp.host)
 }
 
 func (jp *JamPlayer) SetRepeats(repeats uint) {
@@ -166,6 +142,8 @@ func (jp *JamPlayer) Start() error {
 		return fmt.Errorf("no source detected")
 	}
 
+	jp.playing = true
+
 	// default values
 	var bpm, bpi uint = 100, 16
 	if jp.track.BPM > 0 {
@@ -197,8 +175,6 @@ func (jp *JamPlayer) Start() error {
 		jp.repeats = 0
 	}
 
-	jp.playing = true
-
 	samplesBuffer := make([][]float32, 2)
 
 	// эта переменная будет установлена когда буфер будет заполнен всеми данными из MP3 файла
@@ -214,11 +190,38 @@ func (jp *JamPlayer) Start() error {
 		}()
 		intervalsReady := 0
 
-		defer lv2host.Free(jp.host)
+		err := jp.hostConfig.Evaluate()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		// initialize LV2 plugins
+		jp.host = lv2host.Alloc(float64(jp.sampleRate))
+
+		for i, p := range jp.hostConfig.Plugins {
+			if lv2host.AddPluginInstance(jp.host, p.PluginURI) != 0 {
+				logrus.Errorf("Cannot add plugin: %v\n", p.PluginURI)
+				return
+			}
+			for param, val := range p.Data {
+				if lv2host.SetPluginParameter(jp.host, uint32(i), param, val) != 0 {
+					logrus.Errorf("Cannot set plugin parameter: %v\n", param)
+					lv2host.ListPluginParameters(jp.host, uint32(i))
+					return
+				}
+				logrus.Debugf("Setting '%v' to '%v'\n", param, val)
+			}
+		}
+
+		lv2host.Activate(jp.host)
+		defer func() {
+			lv2host.Free(jp.host)
+			jp.host = nil
+		}()
 
 		for {
-			// на случай если кто-то остановил уже плеер
-			if !jp.playing {
+			// на случай если кто-то уже остановил плеер
+			if !jp.playing || jp.host == nil {
 				return
 			}
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
