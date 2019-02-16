@@ -28,8 +28,6 @@ func main() {
 		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	}
 
-	config.Init()
-
 	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
 
 	jamDB, err := tracks.NewJamDB(config.Get().DBFile)
