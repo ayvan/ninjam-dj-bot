@@ -3,7 +3,6 @@ package dj
 import (
 	"github.com/ayvan/ninjam-dj-bot/config"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
-	"github.com/hako/durafmt"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -258,7 +257,8 @@ func (jm *JamManager) Start() (msg string) {
 		return p.Sprint(errorGeneral)
 	}
 
-	return p.Sprintf(messagePlayingTrack, jm.track, durafmt.Parse(jm.calcTrackTime(jm.track, jm.repeats)).String())
+	t := time.Time{}.Add(jm.calcTrackTime(jm.track, jm.repeats))
+	return p.Sprintf(messagePlayingTrack, jm.track, t.Format("04:05"))
 }
 
 func (jm *JamManager) Help() (msg string) {
