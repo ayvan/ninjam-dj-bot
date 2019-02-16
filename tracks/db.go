@@ -147,8 +147,6 @@ func (jdb *JamDB) TagUpdate(id uint, req *Tag) (res *Tag, err error) {
 		return
 	}
 
-	// данные модели ORM, путь к файлу, число проигрываний менять запрещено,
-	// остальное - разрешено
 	req.Model = tag.Model
 
 	db := jdb.db.Save(&req)
@@ -158,6 +156,55 @@ func (jdb *JamDB) TagUpdate(id uint, req *Tag) (res *Tag, err error) {
 	}
 
 	res = &Tag{}
+	dbRes := jdb.db.First(res, id)
+	if dbRes.RecordNotFound() {
+		err = ErrorNotFound
+		return
+	}
+	if dbRes.Error != nil {
+		err = dbRes.Error
+	}
+
+	return
+}
+
+func (jdb *JamDB) Authors() (authors []*Author, err error) {
+	authors = []*Author{}
+	err = jdb.db.Find(&authors).Error
+	return
+}
+
+func (jdb *JamDB) Author(id uint) (res *Author, err error) {
+	author := &Author{}
+	dbRes := jdb.db.First(&author, id)
+	if dbRes.RecordNotFound() {
+		err = ErrorNotFound
+		return
+	}
+	if dbRes.Error != nil {
+		err = dbRes.Error
+	}
+
+	res = author
+
+	return
+}
+
+func (jdb *JamDB) AuthorUpdate(id uint, req *Author) (res *Author, err error) {
+	author, err := jdb.Author(uint(id))
+	if err != nil {
+		return
+	}
+
+	req.Model = author.Model
+
+	db := jdb.db.Save(&req)
+	if db.Error != nil {
+		err = db.Error
+		return
+	}
+
+	res = &Author{}
 	dbRes := jdb.db.First(res, id)
 	if dbRes.RecordNotFound() {
 		err = ErrorNotFound

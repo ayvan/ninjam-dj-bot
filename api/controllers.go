@@ -124,6 +124,79 @@ func PostTag(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tag)
 }
 
+// Authors GET /authors
+func Authors(ctx echo.Context) error {
+	t, err := jamDB.Authors()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, t)
+}
+
+// Author GET /authors/:id
+func Author(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	t, err := jamDB.Author(uint(id))
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, t)
+}
+
+// PutAuthor PUT /authors/:id
+func PutAuthor(ctx echo.Context) error {
+	idParam := ctx.Param("id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	req := tracks.Author{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	author, err := jamDB.AuthorUpdate(uint(id), &req)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, author)
+}
+
+// PostAuthor POST /authors/
+func PostAuthor(ctx echo.Context) error {
+	req := tracks.Author{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	db := jamDB.DB().Save(&req)
+	if db.Error != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, db.Error.Error()))
+	}
+
+	author, err := jamDB.Author(req.ID)
+	if err == tracks.ErrorNotFound {
+		return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound))
+	} else if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.JSON(http.StatusOK, author)
+}
+
 // PostTrack POST /tracks
 func PostTrack(ctx echo.Context) error {
 	file, err := ctx.FormFile("file")
