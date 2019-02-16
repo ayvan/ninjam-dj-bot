@@ -110,7 +110,7 @@ func (t Track) KeyString() string {
 }
 
 func (t Track) String() string {
-	trackName := fmt.Sprintf("%s (key %s, %d BPM)", t.Title, t.KeyString(), t.BPM)
+	trackName := fmt.Sprintf("%s (%s, %d BPM)", t.Title, t.KeyString(), t.BPM)
 
 	if t.Artist != "" {
 		trackName += fmt.Sprintf(" by %s", t.Artist)
