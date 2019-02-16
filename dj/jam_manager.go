@@ -121,8 +121,6 @@ func (jm *JamManager) Playlists() (res []tracks.Playlist) {
 }
 
 func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
-	jm.Stop()
-
 	count, err := jm.jamDB.CountTracks()
 
 	if err != nil {

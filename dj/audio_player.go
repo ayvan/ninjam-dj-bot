@@ -207,11 +207,20 @@ func (jp *JamPlayer) Start() error {
 	waitData := make(chan bool, 1)
 	// это фоновая загрузка и декодирование MP3 в буфер
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logrus.Errorf("panic: %s\n trace: %s", r, string(debug.Stack()))
+			}
+		}()
 		intervalsReady := 0
 
 		defer lv2host.Free(jp.host)
 
 		for {
+			// на случай если кто-то остановил уже плеер
+			if !jp.playing {
+				return
+			}
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
 			rs, err := toReadSeeker(jp.source, intervalSamplesChannels)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
@@ -342,6 +351,9 @@ func (jp *JamPlayer) Start() error {
 func (jp *JamPlayer) Stop() {
 	if jp.stop != nil && len(jp.stop) == 0 {
 		jp.stop <- true
+	}
+	for jp.playing {
+		time.Sleep(time.Millisecond * 500)
 	}
 }
 

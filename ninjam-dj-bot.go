@@ -24,11 +24,11 @@ import (
 )
 
 func main() {
-	config.Init()
-
 	if config.Get().DaemonMode {
 		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	}
+
+	config.Init()
 
 	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
 
@@ -142,7 +142,7 @@ f:
 			break f
 			// messages routers <->
 		case msg := <-botChan:
-			if strings.HasPrefix(msg.Message.Name, msg.Bot.UserName()) {
+			if strings.HasPrefix(msg.Message.Name, msg.Bot.UserName()) || msg.Message.Name == "" {
 				continue
 			}
 			logrus.Info(fmt.Sprintf("%s: %s", msg.Message.Name, msg.Message.Text))
@@ -166,9 +166,10 @@ f:
 
 				if len(s) > 0 {
 					command = s[1]
-
-					msg := jamManager.Command(command)
-					bot.SendMessage(msg)
+					if command != "" {
+						msg := jamManager.Command(command)
+						bot.SendMessage(msg)
+					}
 				}
 			}
 		}
