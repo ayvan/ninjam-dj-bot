@@ -179,7 +179,8 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 		break
 	}
 
-	jm.LoadTrack(track)
+	jm.track = track
+	jm.LoadTrack(jm.track)
 	var repeats uint
 
 	if command.Duration != 0 {
@@ -402,5 +403,5 @@ func (jm *JamManager) SetRepeats(repeats uint) {
 }
 
 func (jm *JamManager) LoadTrack(track *tracks.Track) {
-	jm.jamPlayer.LoadTrack(jm.track)
+	jm.jamPlayer.LoadTrack(track)
 }
