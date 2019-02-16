@@ -40,6 +40,13 @@ func Run(hostAndPort string) {
 	routes.POST("/tags", PostTag)
 	routes.POST("/tags/", PostTag)
 
+	routes.GET("/authors", Authors)
+	routes.GET("/authors/", Authors)
+	routes.GET("/authors/:id", Author)
+	routes.PUT("/authors/:id", PutAuthor)
+	routes.POST("/authors", PostAuthor)
+	routes.POST("/authors/", PostAuthor)
+
 	routes.GET("/test", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "ok"})
 	})
