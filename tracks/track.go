@@ -1,6 +1,9 @@
 package tracks
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	KeyUnknown = iota
@@ -117,4 +120,13 @@ func (t Track) String() string {
 	}
 
 	return trackName
+}
+
+func (p *Track) AfterFind() (err error) {
+
+	p.Artist = strings.Trim(p.Artist, fmt.Sprintf("\x00 \n"))
+	p.Album = strings.Trim(p.Album, fmt.Sprintf("\x00 \n"))
+	p.Title = strings.Trim(p.Title, fmt.Sprintf("\x00 \n"))
+
+	return
 }
