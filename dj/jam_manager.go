@@ -3,6 +3,7 @@ package dj
 import (
 	"github.com/ayvan/ninjam-dj-bot/config"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
+	"github.com/hako/durafmt"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -14,7 +15,7 @@ const (
 	messageAlreadyStarted           = "playing already started"
 	messageCantStartRandomTrack     = "can't start random track"
 	messageUnableToRecognizeCommand = "unable to recognize command, please use \"dj help\" to get the list and format of the available commands"
-	messagePlayingTrack             = "playing track %s"
+	messagePlayingTrack             = "playing track %s, playback duration %s"
 	messagePlaylistStarted          = "playlist %s started"
 	helpMessage                     = "DJ Bot commands: \n" +
 		"%s random - start random track\n" +
@@ -37,7 +38,7 @@ func init() {
 	message.SetString(language.Russian, messageAlreadyStarted, "воспроизведение уже запущено")
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
 	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте \"dj help\" для получения списка и формата доступных команд")
-	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s")
+	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
@@ -81,6 +82,7 @@ type JamManager struct {
 	playingMode playingMode // playing single track or playing list of tracks
 	playlist    *tracks.Playlist
 	track       *tracks.Track
+	repeats     uint
 	playing     bool // играем или нет в данный момент
 
 	jamPlayer  *JamPlayer
@@ -177,14 +179,14 @@ func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
 		break
 	}
 
-	jm.jamPlayer.LoadTrack(track)
+	jm.LoadTrack(track)
 	var repeats uint
 
 	if command.Duration != 0 {
 		repeats = jm.countRepeats(track, command.Duration)
 	}
 
-	jm.jamPlayer.SetRepeats(repeats)
+	jm.SetRepeats(repeats)
 
 	jm.track = track
 	jm.playlist = nil
@@ -219,8 +221,8 @@ func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 		return p.Sprint(errorGeneral)
 	}
 
-	jm.jamPlayer.LoadTrack(jm.track)
-	jm.jamPlayer.SetRepeats(playlist.Tracks[0].Repeats)
+	jm.LoadTrack(jm.track)
+	jm.SetRepeats(playlist.Tracks[0].Repeats)
 	jm.playingMode = playingPlaylist
 
 	msg = p.Sprintf(messagePlaylistStarted, playlist.Name)
@@ -254,8 +256,8 @@ func (jm *JamManager) Start() (msg string) {
 		logrus.Error(err)
 		return p.Sprint(errorGeneral)
 	}
-	// TODO print track time
-	return p.Sprintf(messagePlayingTrack, jm.track)
+
+	return p.Sprintf(messagePlayingTrack, jm.track, durafmt.Parse(jm.calcTrackTime(jm.track, jm.repeats)).String())
 }
 
 func (jm *JamManager) Help() (msg string) {
@@ -325,8 +327,8 @@ func (jm *JamManager) next() (msg string, ok bool) {
 			msg = p.Sprint(errorGeneral)
 		}
 
-		jm.jamPlayer.LoadTrack(jm.track)
-		jm.jamPlayer.SetRepeats(listTrack.Repeats)
+		jm.LoadTrack(jm.track)
+		jm.SetRepeats(listTrack.Repeats)
 		jm.playingMode = playingPlaylist
 
 		msg = jm.Start()
@@ -383,4 +385,22 @@ func (jm *JamManager) countRepeats(track *tracks.Track, duration time.Duration) 
 	repeats := uint(durationMicroS / loopDurationMicroS)
 
 	return repeats
+}
+
+func (mk *JamManager) calcTrackTime(track *tracks.Track, repeats uint) time.Duration {
+	if repeats == 0 {
+		return time.Duration(track.Length) * time.Microsecond
+	}
+	loopDurationMicroS := track.LoopEnd - track.LoopStart
+
+	return time.Duration(loopDurationMicroS*uint64(repeats)+track.LoopStart+track.LoopEnd) * time.Microsecond
+}
+
+func (jm *JamManager) SetRepeats(repeats uint) {
+	jm.jamPlayer.SetRepeats(repeats)
+	jm.repeats = repeats
+}
+
+func (jm *JamManager) LoadTrack(track *tracks.Track) {
+	jm.jamPlayer.LoadTrack(jm.track)
 }
