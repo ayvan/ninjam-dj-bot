@@ -5,7 +5,7 @@ HTTP codes:
 400
 404
 
-Simple form file upload, .mp3 only.
+Simple multipart/form-data file upload, .mp3 only. Form field name "file".
 Response JSON same as GET request response.
 
 **GET /v1/tracks/**
