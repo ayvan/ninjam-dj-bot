@@ -39,7 +39,6 @@ type JamPlayer struct {
 	ninjamBot  JamBot
 	stop       chan bool
 	playing    bool
-	host       *lv2host.CLV2Host
 	hostConfig *lv2hostconfig.LV2HostConfig
 	onStopFunc func()
 }
@@ -196,32 +195,31 @@ func (jp *JamPlayer) Start() error {
 		}
 
 		// initialize LV2 plugins
-		jp.host = lv2host.Alloc(float64(jp.sampleRate))
+		host := lv2host.Alloc(float64(jp.sampleRate))
 
 		for i, p := range jp.hostConfig.Plugins {
-			if lv2host.AddPluginInstance(jp.host, p.PluginURI) != 0 {
+			if lv2host.AddPluginInstance(host, p.PluginURI) != 0 {
 				logrus.Errorf("Cannot add plugin: %v\n", p.PluginURI)
 				return
 			}
 			for param, val := range p.Data {
-				if lv2host.SetPluginParameter(jp.host, uint32(i), param, val) != 0 {
+				if lv2host.SetPluginParameter(host, uint32(i), param, val) != 0 {
 					logrus.Errorf("Cannot set plugin parameter: %v\n", param)
-					lv2host.ListPluginParameters(jp.host, uint32(i))
+					lv2host.ListPluginParameters(host, uint32(i))
 					return
 				}
 				logrus.Debugf("Setting '%v' to '%v'\n", param, val)
 			}
 		}
 
-		lv2host.Activate(jp.host)
+		lv2host.Activate(host)
 		defer func() {
-			lv2host.Free(jp.host)
-			jp.host = nil
+			lv2host.Free(host)
 		}()
 
 		for {
 			// на случай если кто-то уже остановил плеер
-			if !jp.playing || jp.host == nil {
+			if !jp.playing {
 				return
 			}
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
@@ -246,7 +244,7 @@ func (jp *JamPlayer) Start() error {
 				return
 			}
 
-			lv2host.ProcessBuffer(jp.host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(len(deinterleavedSamples[0])))
+			lv2host.ProcessBuffer(host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(len(deinterleavedSamples[0])))
 
 			for i := 0; i < channels; i++ {
 				samplesBuffer[i] = append(samplesBuffer[i], deinterleavedSamples[i]...)
