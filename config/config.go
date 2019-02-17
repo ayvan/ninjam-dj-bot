@@ -81,18 +81,21 @@ func init() {
 
 	content, err := ioutil.ReadFile(appConfig.AppConfigPath)
 	if err != nil {
-		logrus.Fatalf("Can`t read config file (%s): %v\n", appConfig.AppConfigPath, err)
+		logrus.Errorf("Can`t read config file (%s): %v\n", appConfig.AppConfigPath, err)
+		return
 	}
 
 	err = yaml.Unmarshal(content, appConfig)
 	if err != nil {
-		logrus.Fatalf("Yaml file %s parsing error: %v", appConfig.AppConfigPath, err)
+		logrus.Errorf("Yaml file %s parsing error: %v", appConfig.AppConfigPath, err)
+		return
 	}
 
 	if len(appConfig.Lang) != 0 {
 		t, err := language.Parse(appConfig.Lang)
 		if err != nil {
-			logrus.Fatalf("Language name \"%s\" parsing error: %s", appConfig.Lang, err)
+			logrus.Errorf("Language name \"%s\" parsing error: %s", appConfig.Lang, err)
+			return
 		}
 
 		Language = t

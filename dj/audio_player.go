@@ -29,18 +29,19 @@ type JamBot interface {
 }
 
 type JamPlayer struct {
-	track      *tracks.Track
-	tracksPath string
-	source     io.Reader
-	sampleRate int
-	bpm        uint
-	bpi        uint
-	repeats    uint
-	ninjamBot  JamBot
-	stop       chan bool
-	playing    bool
-	hostConfig *lv2hostconfig.LV2HostConfig
-	onStopFunc func()
+	track       *tracks.Track
+	tracksPath  string
+	source      io.Reader
+	sampleRate  int
+	bpm         uint
+	bpi         uint
+	repeats     uint
+	ninjamBot   JamBot
+	stop        chan bool
+	playing     bool
+	hostConfig  *lv2hostconfig.LV2HostConfig
+	onStopFunc  func()
+	onStartFunc func()
 }
 
 type AudioInterval struct {
@@ -56,8 +57,18 @@ func NewJamPlayer(tracksPath string, ninjamBot JamBot, lv2hostConfig *lv2hostcon
 	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
 }
 
+func (jp *JamPlayer) SetOnStart(f func()) {
+	jp.onStartFunc = f
+}
+
 func (jp *JamPlayer) SetOnStop(f func()) {
 	jp.onStopFunc = f
+}
+
+func (jp *JamPlayer) onStart() {
+	if jp.onStartFunc != nil {
+		jp.onStartFunc()
+	}
 }
 
 func (jp *JamPlayer) onStop() {
@@ -259,6 +270,7 @@ func (jp *JamPlayer) Start() error {
 
 	// ждём пока будут готовы интервалы
 	<-waitData
+	jp.onStart()
 
 	// TODO на выходе функции ловить ошибку и сообщать в чат что трек прерван из-за ошибки
 	go func() {

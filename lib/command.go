@@ -1,7 +1,6 @@
-package dj
+package lib
 
 import (
-	"github.com/ayvan/ninjam-dj-bot/lib"
 	"regexp"
 	"strconv"
 	"strings"
@@ -41,6 +40,24 @@ func init() {
 			commandMap[alias] = command
 		}
 	}
+}
+
+type JamChatCommand struct {
+	Command  string
+	Param    string
+	Tags     []string
+	ID       uint
+	Duration time.Duration
+}
+
+type JamCommand struct {
+	Command  uint
+	Param    string
+	Key      uint
+	Mode     uint
+	ID       uint
+	Tags     []uint
+	Duration time.Duration
 }
 
 func commandByName(name string) uint {
@@ -98,7 +115,7 @@ func Command(jamChatCommand JamChatCommand) (command JamCommand) {
 	command.Command = commandByName(jamChatCommand.Command)
 	command.Param = jamChatCommand.Param
 
-	keyMode := lib.KeyModeByName(jamChatCommand.Param)
+	keyMode := KeyModeByName(jamChatCommand.Param)
 	command.Key = keyMode.Key
 	command.Mode = keyMode.Mode
 

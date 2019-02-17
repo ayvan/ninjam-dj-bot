@@ -1,4 +1,4 @@
-package dj
+package lib
 
 import (
 	"github.com/stretchr/testify/assert"

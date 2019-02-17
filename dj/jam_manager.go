@@ -1,7 +1,9 @@
 package dj
 
 import (
+	"github.com/ayvan/ninjam-chatbot/models"
 	"github.com/ayvan/ninjam-dj-bot/config"
+	"github.com/ayvan/ninjam-dj-bot/lib"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
@@ -57,7 +59,7 @@ func init() {
 
 type Manager interface {
 	Playlists() []tracks.Playlist
-	PlayRandom(command JamCommand) string
+	PlayRandom(command lib.JamCommand) string
 	StartPlaylist(id uint) string
 	StartTrack(id uint) string
 	Stop() string
@@ -75,6 +77,7 @@ const (
 type JamChatBot interface {
 	SendMessage(string)
 	UserName() string
+	SetOnUserinfoChange(f func(user models.UserInfo))
 }
 
 type JamManager struct {
@@ -87,33 +90,20 @@ type JamManager struct {
 	jamPlayer  *JamPlayer
 	jamDB      tracks.JamTracksDB
 	jamChatBot JamChatBot
+
+	queueManager *QueueManager
 }
 
-type JamChatCommand struct {
-	Command  string
-	Param    string
-	Tags     []string
-	ID       uint
-	Duration time.Duration
-}
-
-type JamCommand struct {
-	Command  uint
-	Param    string
-	Key      uint
-	Mode     uint
-	ID       uint
-	Tags     []uint
-	Duration time.Duration
-}
-
-func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, sendMessage JamChatBot) *JamManager {
+func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, chatBot JamChatBot) *JamManager {
 	jm := &JamManager{
-		jamPlayer:  player,
-		jamDB:      jamDB,
-		jamChatBot: sendMessage,
+		jamPlayer:    player,
+		jamDB:        jamDB,
+		jamChatBot:   chatBot,
+		queueManager: NewQueueManager(chatBot.UserName(), chatBot.SendMessage),
 	}
+	chatBot.SetOnUserinfoChange(jm.queueManager.OnUserinfoChange)
 	player.SetOnStop(jm.onStop)
+	player.SetOnStart(jm.onStart)
 	return jm
 }
 
@@ -121,7 +111,7 @@ func (jm *JamManager) Playlists() (res []tracks.Playlist) {
 	return
 }
 
-func (jm *JamManager) PlayRandom(command JamCommand) (msg string) {
+func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 	count, err := jm.jamDB.CountTracks()
 
 	if err != nil {
@@ -279,24 +269,24 @@ func (jm *JamManager) Help() (msg string) {
 }
 
 func (jm *JamManager) Command(chatCommand string) string {
-	command := Command(CommandParse(chatCommand))
+	command := lib.Command(lib.CommandParse(chatCommand))
 
 	switch command.Command {
-	case CommandRandom:
+	case lib.CommandRandom:
 		return jm.PlayRandom(command)
-	case CommandTrack:
-	case CommandPlaylist:
+	case lib.CommandTrack:
+	case lib.CommandPlaylist:
 		return jm.StartPlaylist(command.ID)
-	case CommandStop:
+	case lib.CommandStop:
 		return jm.Stop()
-	case CommandPlay:
+	case lib.CommandPlay:
 		return jm.Start()
-	case CommandNext:
+	case lib.CommandNext:
 		return jm.Next()
-	case CommandPrev:
-	case CommandHelp:
+	case lib.CommandPrev:
+	case lib.CommandHelp:
 		return jm.Help()
-	case CommandPlaying:
+	case lib.CommandPlaying:
 	default:
 		return p.Sprint(messageUnableToRecognizeCommand)
 	}
@@ -349,7 +339,17 @@ func (jm *JamManager) next() (msg string, ok bool) {
 	return
 }
 
+func (jm *JamManager) onStart() {
+	if jm.track == nil {
+		return
+	}
+
+	jm.queueManager.OnStart(jm.calcTrackTime(jm.track, jm.repeats), jm.calcTrackIntervalTime(jm.track))
+}
+
 func (jm *JamManager) onStop() {
+	jm.queueManager.OnStop()
+
 	if jm.playingMode == playingPlaylist {
 		// если у нас jm.playing == false значит стоп пришёл т.к. мы сами дали команды на стоп - тогда ничего не делаем
 		if !jm.playing {
@@ -401,6 +401,11 @@ func (mk *JamManager) calcTrackTime(track *tracks.Track, repeats uint) time.Dura
 	loopDurationMicroS := track.LoopEnd - track.LoopStart
 
 	return time.Duration(loopDurationMicroS*uint64(repeats)+track.LoopStart+track.LoopEnd) * time.Microsecond
+}
+
+func (mk *JamManager) calcTrackIntervalTime(track *tracks.Track) time.Duration {
+	intervalTime := (float64(time.Minute) / float64(track.BPM)) * float64(track.BPI)
+	return time.Duration(intervalTime)
 }
 
 func (jm *JamManager) SetRepeats(repeats uint) {
