@@ -24,6 +24,8 @@ func init() {
 type QueueManager struct {
 	botName           string
 	userStartTime     *time.Time
+	userStartsPlaying *user
+
 	userPlayDuration  time.Duration
 	trackEndTime      time.Time
 	sendMessage       func(msg string)
@@ -215,12 +217,17 @@ func (qm *QueueManager) next() {
 
 func (qm *QueueManager) start(intervalDuration time.Duration) {
 	//  если уже кто-то играл - переключим на следующего на новом треке
-	if qm.userStartTime != nil && qm.current != nil && qm.current.Next != nil {
+	if qm.userStartTime != nil &&
+		qm.userStartsPlaying == qm.current && // may be different if current user leaved server and next user has become current
+		qm.userStartTime.Add(qm.userPlayDuration).Before(time.Now()) &&
+		qm.current != nil &&
+		qm.current.Next != nil {
 		qm.next()
 		return
 	}
 	tn := time.Now().Add(intervalDuration)
 	qm.userStartTime = &tn
+	qm.userStartsPlaying = qm.current
 	qm.after15SecMsgSent = false
 	if qm.current != nil && qm.sendMessage != nil {
 		// если до конца трека осталось примерно время игры одного музыканта - не объявляем следующего
