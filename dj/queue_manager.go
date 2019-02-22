@@ -222,6 +222,8 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 		qm.userStartTime.Add(qm.userPlayDuration).Before(time.Now()) &&
 		qm.current != nil &&
 		qm.current.Next != nil {
+		qm.userStartTime = nil
+		qm.userStartsPlaying = nil
 		qm.next()
 		return
 	}
