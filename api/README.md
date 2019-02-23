@@ -1,3 +1,13 @@
+В фигурных скобках обозначается переменная, например:
+
+```
+/v1/tracks/{id}
+```
+предполагает адрес, для трека с ID 10
+```
+/v1/tracks/10
+```
+
 **POST /v1/tracks/**
 
 HTTP codes:
@@ -47,7 +57,7 @@ Example response:
 }]
 ```
 
-**GET /v1/tracks/:id**
+**GET /v1/tracks/{id}**
 
 HTTP codes:
 200
@@ -86,7 +96,7 @@ Example response:
 }
 ```
 
-**PUT /v1/tracks/:id**
+**PUT /v1/tracks/{id}**
 
 Для установки тегов трека следует в поле tags поместить массив из объектов с ID тега, прочие поля объектов игнорируются:
 ```json
@@ -165,7 +175,7 @@ Example response:
 }]
 ```
 
-**GET /v1/authors/:id**
+**GET /v1/authors/{id}**
 
 HTTP codes:
 200
@@ -182,7 +192,7 @@ Example response:
 }
 ```
 
-**PUT /v1/authors/:id**
+**PUT /v1/authors/{id}**
 
 HTTP codes:
 200
@@ -270,7 +280,7 @@ Example response:
 
 ````
 
-**GET /v1/playlists/:id**
+**GET /v1/playlists/{id}**
 
 HTTP codes:
 200
@@ -297,7 +307,7 @@ Example response:
 
 ````
 
-**PUT /v1/playlists/:id**
+**PUT /v1/playlists/{id}**
 
 HTTP codes:
 200
@@ -349,7 +359,7 @@ Example response:
 ]
 ```
 
-**GET /v1/tags/:id**
+**GET /v1/tags/{id}**
 
 HTTP codes:
 200
@@ -377,7 +387,7 @@ Example request:
 }
 ```
 
-**PUT /v1/tags/:id**
+**PUT /v1/tags/{id}**
 
 HTTP codes:
 200
