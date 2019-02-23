@@ -175,9 +175,14 @@ func (qm *QueueManager) Del(userName string) {
 			}
 
 			if i == 0 {
+				if curr.Next == nil {
+					// TODO остановить плеер
+				}
 				qm.current = curr.Next
 				qm.current.Prev = nil
 				// если текущий юзер и есть выбывший - сразу переключаем
+				qm.userStartTime = nil
+				qm.userStartsPlaying = nil
 				qm.start(0)
 			}
 
