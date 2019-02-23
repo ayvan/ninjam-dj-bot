@@ -118,8 +118,6 @@ func (qm *QueueManager) Users() (users []string) {
 			return
 		}
 	}
-
-	return
 }
 
 func (qm *QueueManager) Add(userName string) {
@@ -236,6 +234,7 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 	qm.userStartTime = &tn
 	qm.userStartsPlaying = qm.current
 	qm.after15SecMsgSent = false
+	qm.stopped = false
 	if qm.current != nil && qm.sendMessage != nil {
 		// если до конца трека осталось примерно время игры одного музыканта - не объявляем следующего
 		if qm.current.Next == nil || time.Now().Add(qm.userPlayDuration + time.Second*10).After(qm.trackEndTime) {
