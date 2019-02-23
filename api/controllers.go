@@ -121,7 +121,7 @@ func PostTag(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
 
-	return ctx.JSON(http.StatusOK, tag)
+	return ctx.JSON(http.StatusCreated, tag)
 }
 
 // Authors GET /authors
@@ -194,7 +194,7 @@ func PostAuthor(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
 
-	return ctx.JSON(http.StatusOK, author)
+	return ctx.JSON(http.StatusCreated, author)
 }
 
 // PostTrack POST /tracks
@@ -300,7 +300,7 @@ func PostPlaylist(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
 	}
 
-	return ctx.JSON(http.StatusOK, playlist)
+	return ctx.JSON(http.StatusCreated, playlist)
 }
 
 func Playlists(ctx echo.Context) error {

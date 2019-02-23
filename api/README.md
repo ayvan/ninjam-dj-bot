@@ -221,7 +221,7 @@ Example request:
 ```
 
 HTTP codes:
-200
+201
 400
 
 Example request:
@@ -377,7 +377,7 @@ Example response:
 **POST /v1/tags/**
 
 HTTP codes:
-200
+201
 400
 
 Example request:
