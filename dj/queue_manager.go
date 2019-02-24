@@ -161,9 +161,10 @@ func (qm *QueueManager) Del(userName string) {
 	defer func() {
 		if qm.current != nil {
 			logrus.Debugf("current user %s", qm.current.Name)
-		}
-		if qm.current.Next != nil {
-			logrus.Debugf("next user %s", qm.current.Next.Name)
+
+			if qm.current.Next != nil {
+				logrus.Debugf("next user %s", qm.current.Next.Name)
+			}
 		}
 	}()
 
