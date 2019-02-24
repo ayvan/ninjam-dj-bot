@@ -89,6 +89,16 @@ func TestQueueManager_Del(t *testing.T) {
 	assert.Equal(t, uint(2), qm.UsersCount())
 	assert.Equal(t, "test3", qm.current.Name)
 	assert.Equal(t, "test2", qm.current.Next.Name)
+
+	qm.Del("test2")
+	assert.Equal(t, uint(1), qm.UsersCount())
+	assert.Equal(t, "test3", qm.current.Name)
+	assert.Nil(t, qm.current.Prev)
+	assert.Nil(t, qm.current.Next)
+
+	qm.Del("test3")
+	assert.Equal(t, uint(0), qm.UsersCount())
+	assert.Nil(t, qm.current)
 }
 
 func TestQueueManager_Del_2(t *testing.T) {

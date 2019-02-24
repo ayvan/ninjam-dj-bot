@@ -3,9 +3,11 @@ package dj
 import (
 	"github.com/ayvan/ninjam-chatbot/models"
 	"github.com/ayvan/ninjam-dj-bot/lib"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +34,7 @@ type QueueManager struct {
 	first             *user
 	current           *user
 	after15SecMsgSent bool // флаг что сообщение messageAfter15Seconds уже отправлено
+	mtx               *sync.Mutex
 
 	stopped     bool
 	stopChannel chan bool
@@ -46,6 +49,7 @@ type user struct {
 func NewQueueManager(botName string, sendMessageFunc func(msg string)) *QueueManager {
 	qm := &QueueManager{botName: botName, sendMessage: sendMessageFunc}
 	qm.stopChannel = make(chan bool, 1)
+	qm.mtx = new(sync.Mutex)
 	go qm.supervisor()
 
 	return qm
@@ -127,6 +131,11 @@ func (qm *QueueManager) Add(userName string) {
 	}
 
 	qm.Del(userName)
+
+	qm.mtx.Lock()
+	defer qm.mtx.Unlock()
+	logrus.Debugf("user %s joined", userName)
+
 	newUser := &user{Name: userName}
 	if qm.current == nil {
 		qm.current = newUser
@@ -146,6 +155,18 @@ func (qm *QueueManager) Add(userName string) {
 }
 
 func (qm *QueueManager) Del(userName string) {
+	qm.mtx.Lock()
+	defer qm.mtx.Unlock()
+	logrus.Debugf("user %s leaved", userName)
+	defer func() {
+		if qm.current != nil {
+			logrus.Debugf("current user %s", qm.current.Name)
+		}
+		if qm.current.Next != nil {
+			logrus.Debugf("next user %s", qm.current.Next.Name)
+		}
+	}()
+
 	userName = cleanName(userName)
 	if userName == qm.botName {
 		return
@@ -192,6 +213,9 @@ func (qm *QueueManager) Del(userName string) {
 }
 
 func (qm *QueueManager) next() {
+	qm.mtx.Lock()
+	defer qm.mtx.Unlock()
+
 	if qm.current != nil && qm.current.Next != nil {
 		next := qm.current.Next
 
@@ -199,6 +223,12 @@ func (qm *QueueManager) next() {
 		// перекинем текущего в конец списка
 		for {
 			if curr.Next != nil {
+				if curr == curr.Next {
+					logrus.Error("shit happened: current == current.Next")
+					curr.Next = nil
+					break
+				}
+
 				curr = curr.Next
 				continue
 			}
@@ -208,7 +238,8 @@ func (qm *QueueManager) next() {
 			break
 		}
 		qm.current = next
-
+		qm.userStartTime = nil
+		qm.userStartsPlaying = nil
 		qm.start(0)
 		return
 	}
@@ -221,9 +252,9 @@ func (qm *QueueManager) next() {
 func (qm *QueueManager) start(intervalDuration time.Duration) {
 	//  если уже кто-то играл - переключим на следующего на новом треке
 	if qm.userStartTime != nil &&
+		qm.current != nil &&
 		qm.userStartsPlaying == qm.current && // may be different if current user leaved server and next user has become current
 		qm.userStartTime.Add(qm.userPlayDuration).Before(time.Now()) &&
-		qm.current != nil &&
 		qm.current.Next != nil {
 		qm.userStartTime = nil
 		qm.userStartsPlaying = nil

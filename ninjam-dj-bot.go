@@ -151,10 +151,6 @@ f:
 				go func() {
 					<-timer.C
 					logrus.Info("Users after part: ", len(bot.Users()), bot.Users())
-					if len(bot.Users()) == 1 {
-						logrus.Info("Stop player: only 1 user on server, it must be jamtrack bot")
-						// TODO dj.StopMP3()
-					}
 				}()
 			case models.MSG:
 				r := regexp.MustCompile(`^` + bot.UserName() + `\s+(.*)`)
