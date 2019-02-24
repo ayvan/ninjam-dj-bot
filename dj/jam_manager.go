@@ -15,7 +15,7 @@ import (
 const (
 	messageAlreadyStarted           = "playing already started"
 	messageCantStartRandomTrack     = "can't start random track"
-	messageUnableToRecognizeCommand = "unable to recognize command, please use \"dj help\" to get the list and format of the available commands"
+	messageUnableToRecognizeCommand = `unable to recognize command, please use "dj help" to get the list and format of the available commands`
 	messagePlayingTrack             = "playing track %s, playback duration %s"
 	messagePlaylistStarted          = "playlist %s started"
 	helpMessage                     = "DJ Bot commands: \n" +
@@ -38,7 +38,7 @@ var p *message.Printer
 func init() {
 	message.SetString(language.Russian, messageAlreadyStarted, "воспроизведение уже запущено")
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
-	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте \"dj help\" для получения списка и формата доступных команд")
+	message.SetString(language.Russian, messageUnableToRecognizeCommand, `невозможно распознать команду, используйте "dj help" для получения списка и формата доступных команд`)
 	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
