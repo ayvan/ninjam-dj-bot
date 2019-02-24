@@ -227,14 +227,14 @@ func (jp *JamPlayer) Start() error {
 		defer func() {
 			lv2host.Free(host)
 		}()
-
+		source := jp.source
 		for {
-			// на случай если кто-то уже остановил плеер
-			if !jp.playing {
+			// на случай если кто-то уже остановил плеер или сменил источник
+			if !jp.playing || jp.source != source {
 				return
 			}
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
-			rs, err := toReadSeeker(jp.source, intervalSamplesChannels)
+			rs, err := toReadSeeker(source, intervalSamplesChannels)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
 				logrus.Errorf("source.Read error: %s", err)
 			}

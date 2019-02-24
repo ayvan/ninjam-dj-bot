@@ -72,7 +72,10 @@ func (qm *QueueManager) supervisor() {
 			if qm.userStartTime == nil {
 				continue
 			}
-
+			// если до конца трека осталось менее чем qm.userPlayDuration то ничего не делаем
+			if qm.trackEndTime.After(time.Now()) && qm.trackEndTime.Sub(time.Now()) < time.Second*15 {
+				continue
+			}
 			if qm.userStartTime.Add(qm.userPlayDuration).Before(time.Now()) &&
 				qm.userStartTime.Add(qm.userPlayDuration + time.Second*15).After(time.Now()) {
 				if qm.current != nil && qm.current.Next != nil && qm.sendMessage != nil && !qm.after15SecMsgSent {
@@ -82,10 +85,6 @@ func (qm *QueueManager) supervisor() {
 				continue
 			}
 			if qm.userStartTime.Add(qm.userPlayDuration).After(time.Now()) {
-				continue
-			}
-			// если до конца трека осталось менее чем qm.userPlayDuration то ничего не делаем
-			if qm.trackEndTime.After(time.Now()) && qm.trackEndTime.Sub(time.Now()) < time.Second*15 {
 				continue
 			}
 			qm.next()
