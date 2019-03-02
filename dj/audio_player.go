@@ -100,6 +100,10 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 
 	jp.SetRepeats(0) // по-умолчанию повторы не заданы, их должны будут задать отдельно если запуск происходит из плейлиста
 
+	if jp.hostConfig == nil {
+		logrus.Error("hostConfig not found")
+		return
+	}
 	jp.hostConfig.ValueMap["integrated"] = track.Integrated
 	jp.hostConfig.ValueMap["range"] = track.Range
 	jp.hostConfig.ValueMap["peak"] = track.Peak

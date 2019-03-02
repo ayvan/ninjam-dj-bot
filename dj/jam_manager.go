@@ -9,6 +9,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"math/rand"
+	"runtime/debug"
 	"time"
 )
 
@@ -26,11 +27,12 @@ const (
 		"%s next - next track (only if playlist playing)\n" +
 		"%s playing - show current track/playlist info"
 
-	errorGeneral          = "an error has occurred"
-	errorTrackNotSelected = "track not selected, please select track"
-	errorTrackNotFound    = "track %d not found"
-	errorPlaylistNotFound = "playlist %d not found"
-	errorPlaylistIsEmpty  = "playlist %d is empty"
+	errorGeneral            = "an error has occurred"
+	errorTrackNotSelected   = "track not selected, please select track"
+	errorTrackNotFound      = "track %d not found"
+	errorPlaylistNotFound   = "playlist %d not found"
+	errorNoPlaylistSelected = "no playlist selected"
+	errorPlaylistIsEmpty    = "playlist %d is empty"
 )
 
 var p *message.Printer
@@ -45,6 +47,7 @@ func init() {
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
 	message.SetString(language.Russian, errorTrackNotFound, "трек %d не найден")
 	message.SetString(language.Russian, errorPlaylistNotFound, "плейлист %d не найден")
+	message.SetString(language.Russian, errorNoPlaylistSelected, "плейлист не выбран")
 	message.SetString(language.Russian, errorPlaylistIsEmpty, "плейлист %d не содержит треков")
 	message.SetString(language.Russian, helpMessage, "Команды DJ-бота : \n"+
 		"%s random - зпаустить случайный трек\n"+
@@ -112,6 +115,7 @@ func (jm *JamManager) Playlists() (res []tracks.Playlist) {
 }
 
 func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
+	defer recoverer()
 	count, err := jm.jamDB.CountTracks()
 
 	if err != nil {
@@ -191,6 +195,7 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 }
 
 func (jm *JamManager) StartPlaylist(id uint) (msg string) {
+	defer recoverer()
 	jm.Stop()
 
 	playlist, err := jm.jamDB.Playlist(id)
@@ -227,10 +232,14 @@ func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 }
 
 func (jm *JamManager) StartTrack(id uint) (msg string) {
+	// TODO
 	return
 }
 
 func (jm *JamManager) Stop() (msg string) {
+	if jm.jamPlayer == nil {
+		return
+	}
 	if jm.jamPlayer.Playing() {
 		jm.jamPlayer.Stop()
 		jm.playing = false
@@ -245,6 +254,9 @@ func (jm *JamManager) Start() (msg string) {
 	if jm.track == nil {
 		return p.Sprint(errorTrackNotSelected)
 	}
+	if jm.jamPlayer == nil {
+		return
+	}
 	jm.playing = true
 	err := jm.jamPlayer.Start()
 	if err != nil {
@@ -257,6 +269,9 @@ func (jm *JamManager) Start() (msg string) {
 }
 
 func (jm *JamManager) Help() (msg string) {
+	if jm.jamChatBot == nil {
+		return
+	}
 	msg = p.Sprintf(helpMessage,
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
@@ -269,6 +284,8 @@ func (jm *JamManager) Help() (msg string) {
 }
 
 func (jm *JamManager) Command(chatCommand string) string {
+	defer recoverer()
+
 	command := lib.Command(lib.CommandParse(chatCommand))
 
 	switch command.Command {
@@ -300,8 +317,14 @@ func (jm *JamManager) Next() (msg string) {
 }
 
 func (jm *JamManager) next() (msg string, ok bool) {
+	defer recoverer()
+
 	var listTrack tracks.PlaylistTrack
 	found := true
+	if jm.playlist == nil {
+		msg = p.Sprint(errorNoPlaylistSelected)
+		return
+	}
 	for _, lTrack := range jm.playlist.Tracks {
 		if lTrack.TrackID == jm.track.ID {
 			found = true
@@ -340,6 +363,9 @@ func (jm *JamManager) next() (msg string, ok bool) {
 }
 
 func (jm *JamManager) onStart() {
+	defer recoverer()
+
+	logrus.Debug("onStart function called")
 	if jm.track == nil {
 		return
 	}
@@ -348,6 +374,8 @@ func (jm *JamManager) onStart() {
 }
 
 func (jm *JamManager) onStop() {
+	defer recoverer()
+
 	jm.queueManager.OnStop()
 	logrus.Debug("onStop function called")
 	if jm.playingMode == playingPlaylist {
@@ -410,10 +438,22 @@ func (mk *JamManager) calcTrackIntervalTime(track *tracks.Track) time.Duration {
 }
 
 func (jm *JamManager) SetRepeats(repeats uint) {
+	if jm.jamPlayer == nil {
+		return
+	}
 	jm.jamPlayer.SetRepeats(repeats)
 	jm.repeats = repeats
 }
 
 func (jm *JamManager) LoadTrack(track *tracks.Track) {
+	if jm.jamPlayer == nil {
+		return
+	}
 	jm.jamPlayer.LoadTrack(track)
+}
+
+func recoverer() {
+	if r := recover(); r != nil {
+		logrus.Error("panic: %s, stack: \n %s", r, string(debug.Stack()))
+	}
 }
