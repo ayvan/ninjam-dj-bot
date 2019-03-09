@@ -100,6 +100,12 @@ func (jdb *JamDB) Track(id uint) (res *Track, err error) {
 }
 
 func (jdb *JamDB) TrackUpdate(id uint, req *Track) (res *Track, err error) {
+	track, err := jdb.Track(uint(id))
+	if err != nil {
+		return
+	}
+
+	req.Model = track.Model
 	db := jdb.db.Omit("tags", "author", "integrated", "range", "peak", "shortterm", "momentary", "length").Save(&req)
 	if db.Error != nil {
 		err = db.Error
