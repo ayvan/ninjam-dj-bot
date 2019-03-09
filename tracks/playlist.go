@@ -21,6 +21,7 @@ type Playlist struct {
 	Description string `json:"description"`
 	// TargetTrackTime время трека в секундах, по-умолчанию для добавляемого трека, на его основе будет рассчитано число повторов трека
 	TargetTrackTime uint            `json:"target_track_time"`
+	DefaultTimeout  uint            `json:"default_timeout"`
 	Tracks          []PlaylistTrack `json:"tracks"`
 	TracksJSON      []byte          `json:"-"`
 }
