@@ -19,6 +19,8 @@ func init() {
 func Run(hostAndPort string) {
 	routes := Echo.Group("/v1")
 
+	routes.Use(NoCacheHeaders)
+
 	routes.GET("/tracks", Tracks)
 	routes.GET("/tracks/", Tracks)
 	routes.GET("/tracks/:id", Track)
@@ -53,5 +55,16 @@ func Run(hostAndPort string) {
 
 	if err := Echo.Start(hostAndPort); err != nil {
 		panic(err)
+	}
+}
+
+func NoCacheHeaders(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		res := c.Response()
+		res.Header().Set("Cache-Control", "no-store, must-revalidate")
+		res.Header().Set("Expires", "0")
+
+		return next(c)
 	}
 }
