@@ -237,6 +237,7 @@ func (jm *JamManager) StartTrack(id uint) (msg string) {
 }
 
 func (jm *JamManager) Stop() (msg string) {
+	jm.playing = false
 	if jm.jamPlayer == nil {
 		return
 	}
@@ -424,12 +425,14 @@ func (jm *JamManager) countRepeats(track *tracks.Track, duration time.Duration) 
 }
 
 func (mk *JamManager) calcTrackTime(track *tracks.Track, repeats uint) time.Duration {
-	if repeats == 0 {
+	if repeats == 0 ||
+		track.LoopStart == track.LoopEnd || track.LoopEnd < track.LoopStart ||
+		track.LoopStart > track.Length || track.LoopEnd > track.Length {
 		return time.Duration(track.Length) * time.Microsecond
 	}
 	loopDurationMicroS := track.LoopEnd - track.LoopStart
 
-	return time.Duration(loopDurationMicroS*uint64(repeats)+track.LoopStart+track.LoopEnd) * time.Microsecond
+	return time.Duration(loopDurationMicroS*uint64(repeats)+track.LoopStart+(track.Length-track.LoopEnd)) * time.Microsecond
 }
 
 func (mk *JamManager) calcTrackIntervalTime(track *tracks.Track) time.Duration {

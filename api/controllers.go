@@ -45,7 +45,12 @@ func Track(ctx echo.Context) error {
 
 	t, err := jamDB.Track(uint(id))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		switch err {
+		case tracks.ErrorNotFound:
+			return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound, err.Error()))
+		default:
+			return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, t)
@@ -67,7 +72,12 @@ func Tag(ctx echo.Context) error {
 
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+		switch err {
+		case tracks.ErrorNotFound:
+			return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound, err.Error()))
+		default:
+			return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		}
 	}
 
 	t, err := jamDB.Tag(uint(id))
@@ -145,7 +155,12 @@ func Author(ctx echo.Context) error {
 
 	t, err := jamDB.Author(uint(id))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		switch err {
+		case tracks.ErrorNotFound:
+			return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound, err.Error()))
+		default:
+			return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, t)
@@ -268,7 +283,12 @@ func PutTrack(ctx echo.Context) error {
 
 	t, err := jamDB.Track(uint(id))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		switch err {
+		case tracks.ErrorNotFound:
+			return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound, err.Error()))
+		default:
+			return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		}
 	}
 
 	// set filepath, request not contains it
@@ -311,6 +331,7 @@ func PostPlaylist(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, playlist)
 }
 
+// Playlists GET /playlists/
 func Playlists(ctx echo.Context) error {
 	playlists, err := jamDB.Playlists()
 	if err != nil {
@@ -320,6 +341,7 @@ func Playlists(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, playlists)
 }
 
+// Playlist GET /playlists/:id
 func Playlist(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 
@@ -330,12 +352,18 @@ func Playlist(ctx echo.Context) error {
 
 	playlist, err := jamDB.Playlist(uint(id))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		switch err {
+		case tracks.ErrorNotFound:
+			return ctx.JSON(http.StatusNotFound, newError(http.StatusNotFound, err.Error()))
+		default:
+			return ctx.JSON(http.StatusInternalServerError, newError(http.StatusInternalServerError, err.Error()))
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, playlist)
 }
 
+// PutPlaylist PUT /playlists/:id
 func PutPlaylist(ctx echo.Context) error {
 	idParam := ctx.Param("id")
 
