@@ -1,6 +1,7 @@
 package dj
 
 import (
+	"fmt"
 	"github.com/ayvan/ninjam-chatbot/models"
 	"github.com/ayvan/ninjam-dj-bot/config"
 	"github.com/ayvan/ninjam-dj-bot/lib"
@@ -18,6 +19,7 @@ const (
 	messageCantStartRandomTrack     = "can't start random track"
 	messageUnableToRecognizeCommand = "unable to recognize command, please use 'dj help'' to get the list and format of the available commands"
 	messagePlayingTrack             = "playing track %s, playback duration %s"
+	topicPlayingTrack               = "playing track %s"
 	messagePlaylistStarted          = "playlist %s started"
 	helpMessage                     = "DJ Bot commands: \n" +
 		"%s random - start random track\n" +
@@ -42,6 +44,7 @@ func init() {
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
 	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте 'dj help' для получения списка и формата доступных команд")
 	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
+	message.SetString(language.Russian, topicPlayingTrack, "играет трек %s")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
@@ -79,6 +82,7 @@ const (
 
 type JamChatBot interface {
 	SendMessage(string)
+	SendAdminMessage(string)
 	UserName() string
 	SetOnUserinfoChange(f func(user models.UserInfo))
 }
@@ -266,6 +270,9 @@ func (jm *JamManager) Start() (msg string) {
 	}
 
 	t := time.Time{}.Add(jm.calcTrackTime(jm.track, jm.repeats))
+
+	// set topic - track info
+	jm.jamChatBot.SendAdminMessage(fmt.Sprintf("topic %s", p.Sprintf(topicPlayingTrack, jm.track)))
 	return p.Sprintf(messagePlayingTrack, jm.track, t.Format("04:05"))
 }
 
