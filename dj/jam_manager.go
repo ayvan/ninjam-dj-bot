@@ -19,6 +19,7 @@ const (
 	messageCantStartRandomTrack     = "can't start random track"
 	messageUnableToRecognizeCommand = "unable to recognize command, please use 'dj help'' to get the list and format of the available commands"
 	messagePlayingTrack             = "playing track %s, playback duration %s"
+	messageTimeout                  = "timeout %s"
 	topicPlayingTrack               = "playing track %s"
 	messagePlaylistStarted          = "playlist %s started"
 	helpMessage                     = "DJ Bot commands: \n" +
@@ -44,6 +45,7 @@ func init() {
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
 	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте 'dj help' для получения списка и формата доступных команд")
 	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
+	message.SetString(language.Russian, messageTimeout, "перерыв %s")
 	message.SetString(language.Russian, topicPlayingTrack, "играет трек %s")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
@@ -357,7 +359,10 @@ func (jm *JamManager) next() (msg string, ok bool) {
 
 		// if previous track has timeout - sleep
 		if prevTrack.Timeout > 0 {
-			time.Sleep(time.Duration(prevTrack.Timeout) * time.Second)
+			timeoutDuration := time.Duration(prevTrack.Timeout) * time.Second
+			time.Sleep(timeoutDuration)
+			t := time.Time{}.Add(timeoutDuration)
+			jm.jamChatBot.SendMessage(p.Sprintf(messageTimeout, t.Format("04:05")))
 		}
 
 		jm.LoadTrack(jm.track)
