@@ -321,18 +321,18 @@ func (jm *JamManager) next() (msg string, ok bool) {
 	defer recoverer()
 
 	var listTrack tracks.PlaylistTrack
-	found := true
+	var prevTrack *tracks.PlaylistTrack
 	if jm.playlist == nil {
 		msg = p.Sprint(errorNoPlaylistSelected)
 		return
 	}
-	for _, lTrack := range jm.playlist.Tracks {
+	for i, lTrack := range jm.playlist.Tracks {
 		if lTrack.TrackID == jm.track.ID {
-			found = true
+			prevTrack = &jm.playlist.Tracks[i]
 			continue
 		}
 		// на прошлой итерации нашли текущий трек - берём следующий
-		if found {
+		if prevTrack != nil {
 			listTrack = lTrack
 		}
 	}
@@ -346,6 +346,11 @@ func (jm *JamManager) next() (msg string, ok bool) {
 			logrus.Error(err)
 			msg = p.Sprint(errorGeneral)
 			return
+		}
+
+		// if previous track has timeout - sleep
+		if prevTrack.Timeout > 0 {
+			time.Sleep(time.Duration(prevTrack.Timeout) * time.Second)
 		}
 
 		jm.LoadTrack(jm.track)
@@ -376,7 +381,7 @@ func (jm *JamManager) onStart() {
 
 func (jm *JamManager) onStop() {
 	defer recoverer()
-
+	jm.playing = false
 	jm.queueManager.OnStop()
 	logrus.Debug("onStop function called")
 	if jm.playingMode == playingPlaylist {
@@ -395,8 +400,6 @@ func (jm *JamManager) onStop() {
 		// TODO сообщить что плейлист окончен
 	}
 	logrus.Debug("jm.playing = false")
-
-	jm.playing = false
 }
 
 func (jm *JamManager) countRepeats(track *tracks.Track, duration time.Duration) uint {
