@@ -126,9 +126,9 @@ func main() {
 					Bot:     bot,
 					Message: msg,
 				}
-				logrus.Debug("IncomingMessage %s", msg)
+				logrus.Debugf("IncomingMessage %s", msg)
 				botChan <- bm
-				logrus.Debug("IncomingMessage sent to botChan %s", msg)
+				logrus.Debugf("IncomingMessage sent to botChan %s", msg)
 			case <-sigChan:
 				sigChan <- true
 				defer logrus.Info("DJ bot IncomingMessages loop sigChan received")

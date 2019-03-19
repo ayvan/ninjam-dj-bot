@@ -55,7 +55,7 @@ func init() {
 	message.SetString(language.Russian, errorNoPlaylistSelected, "плейлист не выбран")
 	message.SetString(language.Russian, errorPlaylistIsEmpty, "плейлист %d не содержит треков")
 	message.SetString(language.Russian, helpMessage, "Команды DJ-бота : \n"+
-		"%s random - зпаустить случайный трек\n"+
+		"%s random - запустить случайный трек\n"+
 		"%s random Am - запустить случайный трек с заданной тональностью\n"+
 		"%s stop - остановить трек\n"+
 		"%s playlist 12 - запустить плейлист с заданным ID\n"+
@@ -126,11 +126,11 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 
 	if err != nil {
 		logrus.Error(err)
-		return p.Sprint(errorGeneral)
+		return p.Sprintf(errorGeneral)
 	}
 
 	if count == 0 {
-		msg = p.Sprint(messageCantStartRandomTrack)
+		msg = p.Sprintf(messageCantStartRandomTrack)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 	for {
 		i++
 		if i > 1000 {
-			msg = p.Sprint(messageCantStartRandomTrack)
+			msg = p.Sprintf(messageCantStartRandomTrack)
 			return
 		}
 		id := uint(randomizer.Intn(int(count)))
@@ -152,7 +152,7 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 			continue
 		} else if err != nil {
 			logrus.Error(err)
-			return p.Sprint(errorGeneral)
+			return p.Sprintf(errorGeneral)
 		}
 
 		if command.Key != 0 {
@@ -209,7 +209,7 @@ func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 		return p.Sprintf(errorPlaylistNotFound, id)
 	} else if err != nil {
 		logrus.Error(err)
-		return p.Sprint(errorGeneral)
+		return p.Sprintf(errorGeneral)
 	}
 
 	if len(playlist.Tracks) == 0 {
@@ -224,7 +224,7 @@ func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 		return p.Sprintf(errorTrackNotFound, trackID)
 	} else if err != nil {
 		logrus.Error(err)
-		return p.Sprint(errorGeneral)
+		return p.Sprintf(errorGeneral)
 	}
 
 	jm.LoadTrack(jm.track)
@@ -256,10 +256,10 @@ func (jm *JamManager) Stop() (msg string) {
 
 func (jm *JamManager) Start() (msg string) {
 	if jm.playing == true {
-		return p.Sprint(messageAlreadyStarted)
+		return p.Sprintf(messageAlreadyStarted)
 	}
 	if jm.track == nil {
-		return p.Sprint(errorTrackNotSelected)
+		return p.Sprintf(errorTrackNotSelected)
 	}
 	if jm.jamPlayer == nil {
 		return
@@ -268,7 +268,8 @@ func (jm *JamManager) Start() (msg string) {
 	err := jm.jamPlayer.Start()
 	if err != nil {
 		logrus.Error(err)
-		return p.Sprint(errorGeneral)
+		jm.playing = false
+		return p.Sprintf(errorGeneral)
 	}
 
 	t := time.Time{}.Add(jm.calcTrackTime(jm.track, jm.repeats))
@@ -315,7 +316,7 @@ func (jm *JamManager) Command(chatCommand string) string {
 		return jm.Help()
 	case lib.CommandPlaying:
 	default:
-		return p.Sprint(messageUnableToRecognizeCommand)
+		return p.Sprintf(messageUnableToRecognizeCommand)
 	}
 
 	return ""
@@ -332,7 +333,7 @@ func (jm *JamManager) next() (msg string, ok bool) {
 	var listTrack tracks.PlaylistTrack
 	var prevTrack *tracks.PlaylistTrack
 	if jm.playlist == nil {
-		msg = p.Sprint(errorNoPlaylistSelected)
+		msg = p.Sprintf(errorNoPlaylistSelected)
 		return
 	}
 	for i, lTrack := range jm.playlist.Tracks {
@@ -353,7 +354,7 @@ func (jm *JamManager) next() (msg string, ok bool) {
 			msg = p.Sprintf(errorTrackNotFound, listTrack.TrackID)
 		} else if err != nil {
 			logrus.Error(err)
-			msg = p.Sprint(errorGeneral)
+			msg = p.Sprintf(errorGeneral)
 			return
 		}
 

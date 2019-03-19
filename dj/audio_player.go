@@ -465,9 +465,8 @@ func loop(s [][]float32, cPos, sPos, ePos, length, channels int) (res [][]float3
 }
 
 func (jp *JamPlayer) OnServerConfigChange(bpm, bpi uint) {
-	logrus.Info("Server change notify: BPM %dm BPI %d", bpm, bpi)
-	logrus.Debug(jp.Playing(), jp.track != nil, jp.track.BPM != bpm, jp.track.BPI != bpi, jp.track.BPM, jp.track.BPI)
-	if jp.Playing() && jp.track != nil && jp.track.BPM != bpm && jp.track.BPI != bpi {
+	logrus.Infof("Server change notify: BPM %d, BPI %d", bpm, bpi)
+	if jp.Playing() && jp.track != nil && (jp.track.BPM != bpm || jp.track.BPI != bpi) {
 		jp.setBPM(jp.track.BPM)
 		jp.setBPI(jp.track.BPI)
 	}
