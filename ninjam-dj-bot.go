@@ -145,7 +145,7 @@ f:
 			break f
 			// messages routers <->
 		case msg := <-botChan:
-			logrus.Debug("botChan received message %s", msg)
+			logrus.Debugf("botChan received message %s", msg)
 			if strings.HasPrefix(msg.Message.Name, msg.Bot.UserName()) || msg.Message.Name == "" {
 				continue
 			}
