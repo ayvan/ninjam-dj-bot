@@ -113,10 +113,12 @@ func main() {
 	wg.Add(1)
 	go func(bot *ninjam_bot.NinJamBot) {
 		defer wg.Done()
+		defer logrus.Info("bot.Connect() finished")
 		bot.Connect()
 	}(bot)
 
 	go func(bot *ninjam_bot.NinJamBot) {
+		defer logrus.Info("DJ bot IncomingMessages loop finished")
 		for {
 			select {
 			case msg := <-bot.IncomingMessages():
@@ -124,9 +126,12 @@ func main() {
 					Bot:     bot,
 					Message: msg,
 				}
+				logrus.Debug("IncomingMessage %s", msg)
 				botChan <- bm
+				logrus.Debug("IncomingMessage sent to botChan %s", msg)
 			case <-sigChan:
 				sigChan <- true
+				defer logrus.Info("DJ bot IncomingMessages loop sigChan received")
 				return
 			}
 		}
@@ -140,6 +145,7 @@ f:
 			break f
 			// messages routers <->
 		case msg := <-botChan:
+			logrus.Debug("botChan received message %s", msg)
 			if strings.HasPrefix(msg.Message.Name, msg.Bot.UserName()) || msg.Message.Name == "" {
 				continue
 			}
@@ -168,7 +174,7 @@ f:
 			}
 		}
 	}
-
+	logrus.Info("DJ bot main loop finished")
 	wg.Wait()
 
 	// t.SendMessage(fmt.Sprint("Новые участники на джем-сервере ", n.Name, ": ", liUsers))
