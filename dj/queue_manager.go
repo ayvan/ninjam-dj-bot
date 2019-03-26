@@ -142,6 +142,7 @@ func (qm *QueueManager) Add(userName string) {
 		return
 	}
 
+	i := 0
 	curr := qm.current
 	for {
 		if curr.Next == nil {
@@ -150,6 +151,17 @@ func (qm *QueueManager) Add(userName string) {
 			return
 		}
 		curr = curr.Next
+
+		if curr == qm.current {
+			logrus.Error("Shit happened! QueueManager.Add curr == qm.current")
+			return
+		}
+
+		i++
+		if i > 1000 {
+			logrus.Error("Shit happened! QueueManager.Add")
+			return
+		}
 	}
 }
 
@@ -208,7 +220,17 @@ func (qm *QueueManager) Del(userName string) {
 			return
 		}
 		curr = curr.Next
+
+		if curr == qm.current {
+			logrus.Error("Shit happened! QueueManager.Del curr == qm.current")
+			return
+		}
+
 		i++
+		if i > 1000 {
+			logrus.Error("Shit happened! QueueManager.Del i > 1000")
+			return
+		}
 	}
 }
 
@@ -221,15 +243,27 @@ func (qm *QueueManager) next() {
 
 		curr := qm.current
 		// перекинем текущего в конец списка
+		i := 0
 		for {
 			if curr.Next != nil {
 				if curr == curr.Next {
-					logrus.Error("shit happened: current == current.Next")
+					logrus.Error("Shit happened! QueueManager.next current == current.Next")
 					curr.Next = nil
 					break
 				}
 
 				curr = curr.Next
+
+				if curr == qm.current {
+					logrus.Error("Shit happened! QueueManager.next curr == qm.current")
+					return
+				}
+
+				i++
+				if i > 1000 {
+					logrus.Error("Shit happened! QueueManager.next i > 1000")
+					return
+				}
 				continue
 			}
 			curr.Next = qm.current
