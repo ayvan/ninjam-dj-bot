@@ -143,7 +143,7 @@ func (jp *JamPlayer) setBPM(bpm uint) {
 		time.Sleep(time.Millisecond * 100)
 		jp.bpmBPIOnSet = false
 	}()
-	logrus.Info("setBPM %d", bpm)
+	logrus.Infof("setBPM %d", bpm)
 	msg := fmt.Sprintf("bpm %d", bpm)
 	jp.bpm = bpm
 	jp.ninjamBot.SendAdminMessage(msg)
@@ -154,7 +154,7 @@ func (jp *JamPlayer) setBPI(bpi uint) {
 		time.Sleep(time.Millisecond * 100)
 		jp.bpmBPIOnSet = false
 	}()
-	logrus.Info("setBPI %d", bpi)
+	logrus.Infof("setBPI %d", bpi)
 	msg := fmt.Sprintf("bpi %d", bpi)
 	jp.bpi = bpi
 	jp.ninjamBot.SendAdminMessage(msg)

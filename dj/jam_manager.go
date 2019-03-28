@@ -473,6 +473,6 @@ func (jm *JamManager) LoadTrack(track *tracks.Track) {
 
 func recoverer() {
 	if r := recover(); r != nil {
-		logrus.Error("panic: %s, stack: \n %s", r, string(debug.Stack()))
+		logrus.Errorf("panic: %s, stack: \n %s", r, string(debug.Stack()))
 	}
 }
