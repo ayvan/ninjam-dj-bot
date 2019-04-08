@@ -192,7 +192,7 @@ func (qm *QueueManager) Del(userName string) {
 			return
 		}
 		if curr.Name == userName {
-			if curr.Prev != nil {
+			if curr.Prev != nil && curr.Prev != curr.Next { // только если есть предыдущий юзер, и при этом его следующим не станет он сам после удаления ушедшего юзера
 				curr.Prev.Next = curr.Next
 			}
 			if curr.Next == nil && i == 0 {
@@ -200,7 +200,7 @@ func (qm *QueueManager) Del(userName string) {
 				return
 			}
 
-			if curr.Next != nil {
+			if curr.Next != nil && curr.Next != curr.Prev {
 				curr.Next.Prev = curr.Prev
 			}
 
