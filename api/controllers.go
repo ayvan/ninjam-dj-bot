@@ -1,11 +1,13 @@
 package api
 
 import (
+	"github.com/ayvan/ninjam-dj-bot/auth"
 	"github.com/ayvan/ninjam-dj-bot/config"
 	"github.com/ayvan/ninjam-dj-bot/helpers"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/ayvan/ninjam-dj-bot/tracks_sync"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -19,9 +21,41 @@ type ErrorResp struct {
 }
 
 var jamDB *tracks.JamDB
+var authenticator *auth.JWTAuth
 
-func Init(db *tracks.JamDB) {
+func Init(db *tracks.JamDB, aDB *auth.DB) {
 	jamDB = db
+
+	conf := auth.Config{
+		PrivateKeyPath:       config.Get().PrivateKeyPath,
+		PublicKeyPath:        config.Get().PublicKeyPath,
+		DefaultAdminPassword: config.Get().DefaultAdminPassword,
+	}
+	var err error
+	authenticator, err = auth.NewAuth(conf, aDB)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+type LoginForm struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// Login POST /login
+func Login(ctx echo.Context) error {
+	req := LoginForm{}
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, newError(http.StatusBadRequest, err.Error()))
+	}
+
+	token, err := authenticator.Authenticate(req.Username, req.Password)
+	if err != nil {
+		return ctx.JSON(http.StatusUnauthorized, newError(http.StatusUnauthorized))
+	}
+
+	return ctx.JSON(http.StatusOK, token)
 }
 
 // Tracks GET /tracks

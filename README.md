@@ -20,3 +20,9 @@ Add to rc.local or any other autostart script
 ```
 su dj -c '/usr/bin/ninjam-dj-bot -c /etc/ninjam/djbot.yaml' > /var/log/djbot.log 2>&1 &
 ```
+
+Generate RSA keys for JWT token:
+```
+openssl genrsa -out private.pem 1024
+openssl rsa -in private.pem -outform PEM -pubout -out public.pem
+```

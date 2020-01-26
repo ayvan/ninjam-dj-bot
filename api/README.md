@@ -8,6 +8,37 @@
 /v1/tracks/10
 ```
 
+Перед использованием методов API следует авторизоваться:
+
+**POST /v1/login**
+
+HTTP codes:
+201
+400
+
+Example request:
+```json
+{
+  "username":"odmin",
+  "password":"derparol123"
+}
+```
+
+Example response:
+```json
+{
+  "access_token": "eyJhbGciOiJSUzUxMiIsInR7cCI6IkpXVCJ9.eyJleHAiOjE1ODAyMTYzNDIsImlhdCI8MTU4MDEyOTk0Miwic3ViIjoxfQ.pTcJ36eZoD5C50zEcumJkq5oT8pWiqik2jUT9qoDAJGRoVJHpqjLykVmMOKz1P1Pb-oE23HWXXYo5zVK2jN3RM-5H8JIGpq3sjLxP6ErUVE8-ncouj4KSTljgtj67I6zzxnkLvXFYSUW6EGhbfBY2mqe1nKG4uWQ6AWFw_zijq5"
+}
+```
+
+Полученный access_token следует затем помещать во все запросы в виде HTTP хедера Authorization:
+
+```
+Authorization eyJhbGciOiJSUzUxMiIsInR7cCI6IkpXVCJ9.eyJleHAiOjE1ODAyMTYzNDIsImlhdCI8MTU4MDEyOTk0Miwic3ViIjoxfQ.pTcJ36eZoD5C50zEcumJkq5oT8pWiqik2jUT9qoDAJGRoVJHpqjLykVmMOKz1P1Pb-oE23HWXXYo5zVK2jN3RM-5H8JIGpq3sjLxP6ErUVE8-ncouj4KSTljgtj67I6zzxnkLvXFYSUW6EGhbfBY2mqe1nKG4uWQ6AWFw_zijq5
+```
+
+Срок жизни токена 24 часа, в случае получения HTTP 401 следует просто заново авторизоваться. 
+
 **POST /v1/tracks/**
 
 HTTP codes:

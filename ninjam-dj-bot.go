@@ -6,6 +6,7 @@ import (
 	"github.com/ayvan/ninjam-chatbot/models"
 	"github.com/ayvan/ninjam-chatbot/ninjam-bot"
 	"github.com/ayvan/ninjam-dj-bot/api"
+	"github.com/ayvan/ninjam-dj-bot/auth"
 	"github.com/ayvan/ninjam-dj-bot/config"
 	"github.com/ayvan/ninjam-dj-bot/dj"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
@@ -28,13 +29,18 @@ func main() {
 		godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	}
 
-	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
-
 	jamDB, err := tracks.NewJamDB(config.Get().DBFile)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	api.Init(jamDB)
+
+	authDB, err := auth.NewDB(config.Get().AuthDBFile)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	api.Init(jamDB, authDB)
+
+	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
 
 	pidFile := config.Get().AppPidPath
 
@@ -45,7 +51,7 @@ func main() {
 		err := ioutil.WriteFile(pidFile, []byte(pid), 0644)
 
 		if err != nil {
-			logrus.Fatal("Error when writing pidfile:", err)
+			logrus.Fatal("Error when writing pid file:", err)
 		}
 
 		defer func() {

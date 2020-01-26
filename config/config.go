@@ -15,20 +15,24 @@ import (
 var Language language.Tag
 
 type AppConfig struct {
-	AppPath       string
-	AppConfigPath string
-	AppPidPath    string
-	Lang          string       `yaml:"lang"`
-	HTTPPort      string       `yaml:"http_port"`
-	TracksDir     string       `yaml:"tracks_dir"`
-	DBFile        string       `yaml:"db_file"`
-	LV2HostConfig string       `yaml:"lv2host_config"`
-	DaemonMode    bool         `yaml:"daemon"`
-	AppName       string       `yaml:"app_name"`
-	LogFile       string       `yaml:"log_file"`
-	LogLevel      string       `yaml:"log_level"`
-	Server        NinJamServer `yaml:"server"`
-	Player        Player       `yaml:"player"`
+	AppPath              string
+	AppConfigPath        string
+	AppPidPath           string
+	Lang                 string       `yaml:"lang"`
+	HTTPPort             string       `yaml:"http_port"`
+	TracksDir            string       `yaml:"tracks_dir"`
+	DBFile               string       `yaml:"db_file"`
+	AuthDBFile           string       `yaml:"auth_db_file"`
+	PublicKeyPath        string       `yaml:"public_key_path"`
+	PrivateKeyPath       string       `yaml:"private_key_path"`
+	DefaultAdminPassword string       `yaml:"default_admin_password"`
+	LV2HostConfig        string       `yaml:"lv2host_config"`
+	DaemonMode           bool         `yaml:"daemon"`
+	AppName              string       `yaml:"app_name"`
+	LogFile              string       `yaml:"log_file"`
+	LogLevel             string       `yaml:"log_level"`
+	Server               NinJamServer `yaml:"server"`
+	Player               Player       `yaml:"player"`
 }
 
 type NinJamServer struct {

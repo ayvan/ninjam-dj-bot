@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"net/http"
 )
 
@@ -12,6 +13,7 @@ func init() {
 	Echo = echo.New()
 	Echo.HideBanner = true
 	Echo.HidePort = true
+	Echo.Pre(middleware.RemoveTrailingSlash())
 }
 
 // Run app
@@ -20,34 +22,29 @@ func Run(hostAndPort string) {
 	routes := Echo.Group("/v1")
 
 	routes.Use(NoCacheHeaders)
+	routes.POST("/login", Login)
+
+	routes.Use(Auth())
 
 	routes.GET("/tracks", Tracks)
-	routes.GET("/tracks/", Tracks)
 	routes.GET("/tracks/:id", Track)
 	routes.PUT("/tracks/:id", PutTrack)
 	routes.POST("/tracks", PostTrack)
-	routes.POST("/tracks/", PostTrack)
 
 	routes.GET("/playlists", Playlists)
-	routes.GET("/playlists/", Playlists)
 	routes.GET("/playlists/:id", Playlist)
 	routes.PUT("/playlists/:id", PutPlaylist)
 	routes.POST("/playlists", PostPlaylist)
-	routes.POST("/playlists/", PostPlaylist)
 
 	routes.GET("/tags", Tags)
-	routes.GET("/tags/", Tags)
 	routes.GET("/tags/:id", Tag)
 	routes.PUT("/tags/:id", PutTag)
 	routes.POST("/tags", PostTag)
-	routes.POST("/tags/", PostTag)
 
 	routes.GET("/authors", Authors)
-	routes.GET("/authors/", Authors)
 	routes.GET("/authors/:id", Author)
 	routes.PUT("/authors/:id", PutAuthor)
 	routes.POST("/authors", PostAuthor)
-	routes.POST("/authors/", PostAuthor)
 
 	routes.GET("/test", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "ok"})
@@ -67,4 +64,23 @@ func NoCacheHeaders(next echo.HandlerFunc) echo.HandlerFunc {
 
 		return next(c)
 	}
+}
+
+func Auth() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ok := authenticateUser(c)
+			if !ok {
+				return echo.ErrUnauthorized
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func authenticateUser(ctx echo.Context) bool {
+	ok, _ := authenticator.Validate(ctx.Request())
+
+	return ok
 }

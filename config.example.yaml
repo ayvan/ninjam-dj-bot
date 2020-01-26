@@ -4,6 +4,10 @@ log_level: debug
 lang: en_GB
 http_port: 8080
 db_file: ./tracks/tracks.db
+auth_db_file: ./users.db
+public_key_path: ./public.pem
+private_key_path: ./private.pem
+default_admin_password: derparol
 tracks_dir: ./tracks
 lv2host_config: lv2host.yaml
 daemon: false
