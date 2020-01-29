@@ -283,6 +283,8 @@ func (qm *QueueManager) next() {
 }
 
 func (qm *QueueManager) start(intervalDuration time.Duration) {
+	qm.mtx.Lock()
+	defer qm.mtx.Unlock()
 	//  если уже кто-то играл - переключим на следующего на новом треке
 	if qm.userStartTime != nil &&
 		qm.current != nil &&

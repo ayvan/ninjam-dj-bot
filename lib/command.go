@@ -18,6 +18,8 @@ const (
 	CommandPrev
 	CommandPlaying
 	CommandHelp
+	CommandQStart
+	CommandQFinish
 )
 
 var commandAliases = map[uint][]string{
@@ -30,6 +32,8 @@ var commandAliases = map[uint][]string{
 	CommandPrev:     {"prev", "previous"},
 	CommandPlaying:  {"playing", "current", "now"},
 	CommandHelp:     {"help"},
+	CommandQStart:   {"qstart", "qs"},
+	CommandQFinish:  {"qfinish", "qf"},
 }
 
 var commandMap = make(map[string]uint)

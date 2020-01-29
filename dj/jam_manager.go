@@ -15,14 +15,20 @@ import (
 )
 
 const (
-	messageAlreadyStarted           = "playing already started"
-	messageCantStartRandomTrack     = "can't start random track"
-	messageUnableToRecognizeCommand = "unable to recognize command, please use 'dj help'' to get the list and format of the available commands"
-	messagePlayingTrack             = "playing track %s, playback duration %s"
-	messageTimeout                  = "timeout %s"
-	topicPlayingTrack               = "playing track %s"
-	messagePlaylistStarted          = "playlist %s started"
-	helpMessage                     = "DJ Bot commands: \n" +
+	messageAlreadyStarted               = "playing already started"
+	messageCantStartRandomTrack         = "can't start random track"
+	messageUnableToRecognizeCommand     = "unable to recognize command, please use 'dj help'' to get the list and format of the available commands"
+	messagePlayingTrack                 = "playing track %s, playback duration %s"
+	messageQueueStarted                 = "queue started"
+	messageQueueFinished                = "queue finished"
+	messageQueueCantStartPlayingTrack   = "can't start queue, the track is playing"
+	messageQueueCantStartAlreadyStarted = "can't start queue, already started"
+	messageQueueCantFinishNotStarted    = "can't finish queue, not started"
+	messageQueueCantFinishPlayingTrack  = "can't finish queue, the track is playing"
+	messageTimeout                      = "timeout %s"
+	topicPlayingTrack                   = "playing track %s"
+	messagePlaylistStarted              = "playlist %s started"
+	helpMessage                         = "DJ Bot commands: \n" +
 		"%s random - start random track\n" +
 		"%s random Am - start random track with key\n" +
 		"%s stop - stop track\n" +
@@ -47,6 +53,10 @@ func init() {
 	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
 	message.SetString(language.Russian, messageTimeout, "перерыв %s")
 	message.SetString(language.Russian, topicPlayingTrack, "играет трек %s")
+	message.SetString(language.Russian, messageQueueStarted, "очередь запущена")
+	message.SetString(language.Russian, messageQueueFinished, "очередь остановлена")
+	message.SetString(language.Russian, messageQueueCantStartPlayingTrack, "нельзя запустить очередь, играет трек")
+	message.SetString(language.Russian, messageQueueCantStartAlreadyStarted, "нельзя запустить очередь, уже запущена")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
@@ -279,6 +289,39 @@ func (jm *JamManager) Start() (msg string) {
 	return p.Sprintf(messagePlayingTrack, jm.track, t.Format("04:05"))
 }
 
+func (jm *JamManager) Playing() (msg string) {
+	t := time.Time{}.Add(jm.calcTrackTime(jm.track, jm.repeats))
+	return p.Sprintf(messagePlayingTrack, jm.track, t.Format("04:05"))
+}
+
+func (jm *JamManager) QueueStart() (msg string) {
+	if jm.playing == true {
+		return p.Sprintf(messageQueueCantStartPlayingTrack)
+	}
+	if !jm.queueManager.stopped {
+		return p.Sprintf(messageQueueCantStartAlreadyStarted)
+	}
+
+	// default queue time is 6 hours
+	jm.queueManager.OnStart(time.Hour*6, time.Second*5)
+
+	return p.Sprintf(messageQueueStarted)
+}
+
+func (jm *JamManager) QueueFinish() (msg string) {
+	if jm.playing == true {
+		return p.Sprintf(messageQueueCantFinishPlayingTrack)
+	}
+
+	if jm.queueManager.stopped {
+		return p.Sprintf(messageQueueCantFinishNotStarted)
+	}
+
+	jm.queueManager.OnStop()
+
+	return p.Sprintf(messageQueueFinished)
+}
+
 func (jm *JamManager) Help() (msg string) {
 	if jm.jamChatBot == nil {
 		return
@@ -315,6 +358,11 @@ func (jm *JamManager) Command(chatCommand string) string {
 	case lib.CommandHelp:
 		return jm.Help()
 	case lib.CommandPlaying:
+		return jm.Playing()
+	case lib.CommandQStart:
+		return jm.QueueStart()
+	case lib.CommandQFinish:
+		return jm.QueueFinish()
 	default:
 		return p.Sprintf(messageUnableToRecognizeCommand)
 	}
