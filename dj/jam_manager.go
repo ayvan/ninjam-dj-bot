@@ -59,6 +59,8 @@ func init() {
 	message.SetString(language.Russian, messageQueueFinished, "очередь остановлена")
 	message.SetString(language.Russian, messageQueueCantStartPlayingTrack, "нельзя запустить очередь, играет трек")
 	message.SetString(language.Russian, messageQueueCantStartAlreadyStarted, "нельзя запустить очередь, уже запущена")
+	message.SetString(language.Russian, messageQueueCantFinishNotStarted, "нельзя остановить очередь, не запущена")
+	message.SetString(language.Russian, messageQueueCantFinishPlayingTrack, "нельзя остановить очередь, играет трек")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")

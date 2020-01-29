@@ -284,7 +284,6 @@ func (qm *QueueManager) next() {
 }
 
 func (qm *QueueManager) start(intervalDuration time.Duration) {
-	qm.mtx.Lock()
 	//  если уже кто-то играл - переключим на следующего на новом треке
 	if qm.userStartTime != nil &&
 		qm.current != nil &&
@@ -294,7 +293,6 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 		qm.userStartTime = nil
 		qm.userStartsPlaying = nil
 
-		qm.mtx.Unlock()
 		qm.next()
 		return
 	}
@@ -311,7 +309,6 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 			qm.sendMessage(p.Sprintf(messageNowPlaying, qm.current.Name) + ", " + p.Sprintf(messageIsNext, qm.current.Next.Name))
 		}
 	}
-	qm.mtx.Unlock()
 }
 
 func (qm *QueueManager) OnStart(trackDuration, intervalDuration time.Duration) {
