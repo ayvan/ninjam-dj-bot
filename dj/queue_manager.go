@@ -78,7 +78,7 @@ func (qm *QueueManager) supervisor() {
 				continue
 			}
 			if qm.userStartTime.Add(qm.userPlayDuration).Before(time.Now()) &&
-				qm.userStartTime.Add(qm.userPlayDuration+time.Second*15).After(time.Now()) {
+				qm.userStartTime.Add(qm.userPlayDuration + time.Second*15).After(time.Now()) {
 				if qm.current != nil && qm.current.Next != nil && qm.sendMessage != nil && !qm.after15SecMsgSent {
 					qm.sendMessage(p.Sprintf(messageAfter15Seconds, qm.current.Next.Name))
 					qm.after15SecMsgSent = true
@@ -285,7 +285,6 @@ func (qm *QueueManager) next() {
 
 func (qm *QueueManager) start(intervalDuration time.Duration) {
 	qm.mtx.Lock()
-	defer qm.mtx.Unlock()
 	//  если уже кто-то играл - переключим на следующего на новом треке
 	if qm.userStartTime != nil &&
 		qm.current != nil &&
@@ -294,6 +293,8 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 		qm.current.Next != nil {
 		qm.userStartTime = nil
 		qm.userStartsPlaying = nil
+
+		qm.mtx.Unlock()
 		qm.next()
 		return
 	}
@@ -304,12 +305,13 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 	qm.stopped = false
 	if qm.current != nil && qm.sendMessage != nil {
 		// если до конца трека осталось примерно время игры одного музыканта - не объявляем следующего
-		if qm.current.Next == nil || time.Now().Add(qm.userPlayDuration+time.Second*10).After(qm.trackEndTime) {
+		if qm.current.Next == nil || time.Now().Add(qm.userPlayDuration + time.Second*10).After(qm.trackEndTime) {
 			qm.sendMessage(p.Sprintf(messageNowPlaying, qm.current.Name))
 		} else {
 			qm.sendMessage(p.Sprintf(messageNowPlaying, qm.current.Name) + ", " + p.Sprintf(messageIsNext, qm.current.Next.Name))
 		}
 	}
+	qm.mtx.Unlock()
 }
 
 func (qm *QueueManager) OnStart(trackDuration, intervalDuration time.Duration) {
