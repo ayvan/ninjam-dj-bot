@@ -50,6 +50,7 @@ func NewQueueManager(botName string, sendMessageFunc func(msg string)) *QueueMan
 	qm := &QueueManager{botName: botName, sendMessage: sendMessageFunc}
 	qm.stopChannel = make(chan bool, 1)
 	qm.mtx = new(sync.Mutex)
+	qm.stopped = true
 	go qm.supervisor()
 
 	return qm
