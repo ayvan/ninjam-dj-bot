@@ -34,7 +34,9 @@ const (
 		"%s stop - stop track\n" +
 		"%s playlist 12 - start playlist by ID\n" +
 		"%s next - next track (only if playlist playing)\n" +
-		"%s playing - show current track/playlist info"
+		"%s playing - show current track/playlist info\n" +
+		"%s qstart - (or qs) start queue without starting track\n" +
+		"%s qfinish - (or qf) finish queue"
 
 	errorGeneral            = "an error has occurred"
 	errorTrackNotSelected   = "track not selected, please select track"
@@ -70,7 +72,9 @@ func init() {
 		"%s stop - остановить трек\n"+
 		"%s playlist 12 - запустить плейлист с заданным ID\n"+
 		"%s next - следующий трек (только если играет плейлист)\n"+
-		"%s playing - показать информацию о текущем треке/плейлисте")
+		"%s playing - показать информацию о текущем треке/плейлисте\n"+
+		"%s qstart - (или qs) запустить очередь без запуска трека\n"+
+		"%s qfinish - (или qf) остановить очередь")
 
 	p = message.NewPrinter(config.Language)
 }
@@ -327,6 +331,8 @@ func (jm *JamManager) Help() (msg string) {
 		return
 	}
 	msg = p.Sprintf(helpMessage,
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
