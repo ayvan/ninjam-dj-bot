@@ -124,10 +124,10 @@ func (qm *QueueManager) Users() (users []string) {
 	}
 }
 
-func (qm *QueueManager) Add(userName string) {
+func (qm *QueueManager) Add(userName string) bool {
 	userName = cleanName(userName)
 	if userName == qm.botName {
-		return
+		return false
 	}
 
 	qm.Del(userName)
@@ -139,7 +139,7 @@ func (qm *QueueManager) Add(userName string) {
 	newUser := &user{Name: userName}
 	if qm.current == nil {
 		qm.current = newUser
-		return
+		return true
 	}
 
 	i := 0
@@ -148,24 +148,24 @@ func (qm *QueueManager) Add(userName string) {
 		if curr.Next == nil {
 			curr.Next = newUser
 			curr.Next.Prev = curr
-			return
+			return true
 		}
 		curr = curr.Next
 
 		if curr == qm.current {
 			logrus.Error("Shit happened! QueueManager.Add curr == qm.current")
-			return
+			return false
 		}
 
 		i++
 		if i > 1000 {
 			logrus.Error("Shit happened! QueueManager.Add")
-			return
+			return false
 		}
 	}
 }
 
-func (qm *QueueManager) Del(userName string) {
+func (qm *QueueManager) Del(userName string) bool {
 	qm.mtx.Lock()
 	defer qm.mtx.Unlock()
 	logrus.Debugf("user %s leaved", userName)
@@ -181,16 +181,16 @@ func (qm *QueueManager) Del(userName string) {
 
 	userName = cleanName(userName)
 	if userName == qm.botName {
-		return
+		return false
 	}
 	if qm.current == nil {
-		return
+		return false
 	}
 	curr := qm.current
 	i := 0
 	for {
 		if curr == nil {
-			return
+			return false
 		}
 		if curr.Name == userName {
 			if curr.Prev != nil && curr.Prev != curr.Next { // только если есть предыдущий юзер, и при этом его следующим не станет он сам после удаления ушедшего юзера
@@ -198,7 +198,8 @@ func (qm *QueueManager) Del(userName string) {
 			}
 			if curr.Next == nil && i == 0 {
 				qm.current = nil
-				return
+				// TODO остановить плеер
+				return true
 			}
 
 			if curr.Next != nil && curr.Next != curr.Prev {
@@ -206,9 +207,6 @@ func (qm *QueueManager) Del(userName string) {
 			}
 
 			if i == 0 {
-				if curr.Next == nil {
-					// TODO остановить плеер
-				}
 				qm.current = curr.Next
 				qm.current.Prev = nil
 				// если текущий юзер и есть выбывший - сразу переключаем
@@ -217,19 +215,19 @@ func (qm *QueueManager) Del(userName string) {
 				qm.start(0)
 			}
 
-			return
+			return true
 		}
 		curr = curr.Next
 
 		if curr == qm.current {
 			logrus.Error("Shit happened! QueueManager.Del curr == qm.current")
-			return
+			return false
 		}
 
 		i++
 		if i > 1000 {
 			logrus.Error("Shit happened! QueueManager.Del i > 1000")
-			return
+			return false
 		}
 	}
 }

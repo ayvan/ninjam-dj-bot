@@ -25,6 +25,8 @@ const (
 	messageQueueCantStartAlreadyStarted = "can't start queue, already started"
 	messageQueueCantFinishNotStarted    = "can't finish queue, not started"
 	messageQueueCantFinishPlayingTrack  = "can't finish queue, the track is playing"
+	messageQueueUserLeaved              = "%s leaved queue"
+	messageQueueUserJoined              = "%s joined queue"
 	messageTimeout                      = "timeout %s"
 	topicPlayingTrack                   = "playing track %s"
 	messagePlaylistStarted              = "playlist %s started"
@@ -36,7 +38,10 @@ const (
 		"%s next - next track (only if playlist playing)\n" +
 		"%s playing - show current track/playlist info\n" +
 		"%s qstart - (or qs) start queue without starting track\n" +
-		"%s qfinish - (or qf) finish queue"
+		"%s qfinish - (or qf) finish queue\n" +
+		"%s qnext - (or qn) set next user in queue as current\n" +
+		"%s qleave - (or ql) leave queue\n" +
+		"%s qjoin - (or qj) join queue"
 
 	errorGeneral            = "an error has occurred"
 	errorTrackNotSelected   = "track not selected, please select track"
@@ -61,6 +66,8 @@ func init() {
 	message.SetString(language.Russian, messageQueueCantStartAlreadyStarted, "нельзя запустить очередь, уже запущена")
 	message.SetString(language.Russian, messageQueueCantFinishNotStarted, "нельзя остановить очередь, не запущена")
 	message.SetString(language.Russian, messageQueueCantFinishPlayingTrack, "нельзя остановить очередь, играет трек")
+	message.SetString(language.Russian, messageQueueUserLeaved, "%s покинул очередь")
+	message.SetString(language.Russian, messageQueueUserJoined, "%s присоединился к очереди")
 	message.SetString(language.Russian, messagePlaylistStarted, "запущен плейлист %s")
 	message.SetString(language.Russian, errorTrackNotSelected, "трек не выбран, пожалуйста, выберите трек")
 	message.SetString(language.Russian, errorGeneral, "произошла ошибка")
@@ -76,7 +83,10 @@ func init() {
 		"%s next - следующий трек (только если играет плейлист)\n"+
 		"%s playing - показать информацию о текущем треке/плейлисте\n"+
 		"%s qstart - (или qs) запустить очередь без запуска трека\n"+
-		"%s qfinish - (или qf) остановить очередь")
+		"%s qfinish - (или qf) остановить очередь\n"+
+		"%s qnext - (или qn) переключить очередь на следующего\n"+
+		"%s qleave - (или ql) покинуть очередь\n"+
+		"%s qjoin - (или qj) присоединиться к очереди")
 
 	p = message.NewPrinter(config.Language)
 }
@@ -328,6 +338,24 @@ func (jm *JamManager) QueueFinish() (msg string) {
 	return p.Sprintf(messageQueueFinished)
 }
 
+func (jm *JamManager) QueueLeave(userName string) (msg string) {
+	ok := jm.queueManager.Del(userName)
+	if !ok {
+		return ""
+	}
+
+	return p.Sprintf(messageQueueUserLeaved, userName)
+}
+
+func (jm *JamManager) QueueJoin(userName string) (msg string) {
+	ok := jm.queueManager.Add(userName)
+	if !ok {
+		return ""
+	}
+
+	return p.Sprintf(messageQueueUserJoined, userName)
+}
+
 func (jm *JamManager) Help() (msg string) {
 	if jm.jamChatBot == nil {
 		return
@@ -340,12 +368,15 @@ func (jm *JamManager) Help() (msg string) {
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
+		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName())
 
 	return
 }
 
-func (jm *JamManager) Command(chatCommand string) string {
+func (jm *JamManager) Command(chatCommand string, userName string) string {
 	defer recoverer()
 
 	command := lib.Command(lib.CommandParse(chatCommand))
@@ -371,6 +402,13 @@ func (jm *JamManager) Command(chatCommand string) string {
 		return jm.QueueStart()
 	case lib.CommandQFinish:
 		return jm.QueueFinish()
+	case lib.CommandQNext:
+		jm.queueManager.next()
+		return ""
+	case lib.CommandQLeave:
+		return jm.QueueLeave(userName)
+	case lib.CommandQJoin:
+		return jm.QueueJoin(userName)
 	default:
 		return p.Sprintf(messageUnableToRecognizeCommand)
 	}

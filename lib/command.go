@@ -20,6 +20,9 @@ const (
 	CommandHelp
 	CommandQStart
 	CommandQFinish
+	CommandQNext
+	CommandQLeave
+	CommandQJoin
 )
 
 var commandAliases = map[uint][]string{
@@ -34,6 +37,9 @@ var commandAliases = map[uint][]string{
 	CommandHelp:     {"help"},
 	CommandQStart:   {"qstart", "qs"},
 	CommandQFinish:  {"qfinish", "qf"},
+	CommandQNext:    {"qnext", "qn"},
+	CommandQLeave:   {"qleave", "ql"},
+	CommandQJoin:    {"qjoin", "qj"},
 }
 
 var commandMap = make(map[string]uint)

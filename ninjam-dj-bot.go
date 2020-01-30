@@ -173,8 +173,10 @@ f:
 				if len(s) > 0 {
 					command = s[1]
 					if command != "" {
-						msg := jamManager.Command(command)
-						bot.SendMessage(msg)
+						msg := jamManager.Command(command, msg.Message.Name)
+						if msg != "" {
+							bot.SendMessage(msg)
+						}
 					}
 				}
 			}
