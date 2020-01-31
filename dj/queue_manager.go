@@ -130,7 +130,10 @@ func (qm *QueueManager) Add(userName string) bool {
 		return false
 	}
 
-	qm.Del(userName)
+	exists := qm.checkExists(userName)
+	if exists {
+		return false
+	}
 
 	qm.mtx.Lock()
 	defer qm.mtx.Unlock()
@@ -160,6 +163,40 @@ func (qm *QueueManager) Add(userName string) bool {
 		i++
 		if i > 1000 {
 			logrus.Error("Shit happened! QueueManager.Add")
+			return false
+		}
+	}
+}
+
+func (qm *QueueManager) checkExists(userName string) bool {
+	userName = cleanName(userName)
+	if userName == qm.botName {
+		return false
+	}
+
+	if qm.current == nil {
+		return false
+	}
+
+	curr := qm.current
+	i := 0
+	for {
+		if curr == nil {
+			return false
+		}
+		if curr.Name == userName {
+			return true
+		}
+		curr = curr.Next
+
+		if curr == qm.current {
+			logrus.Error("Shit happened! QueueManager.checkExists curr == qm.current")
+			return false
+		}
+
+		i++
+		if i > 1000 {
+			logrus.Error("Shit happened! QueueManager.Del i > 1000")
 			return false
 		}
 	}
