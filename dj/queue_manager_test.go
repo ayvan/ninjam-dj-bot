@@ -45,6 +45,38 @@ func TestQueueManager_Add(t *testing.T) {
 	assert.Equal(t, uint(4), qm.UsersCount())
 }
 
+func TestQueueManager_queue(t *testing.T) {
+	qm := NewQueueManager("dj", func(string) {})
+
+	qm.Add("burillo")
+	assert.Nil(t, qm.current.Prev)
+	qm.Add("cronos")
+	assert.Nil(t, qm.current.Prev)
+	qm.Add("archi")
+	assert.Nil(t, qm.current.Prev)
+
+	qm.Del("burillo")
+	assert.Nil(t, qm.current.Prev)
+
+	qm.Add("burillo")
+	assert.Nil(t, qm.current.Prev)
+
+	qm.next()
+	assert.Nil(t, qm.current.Prev)
+
+	qm.next()
+	assert.Nil(t, qm.current.Prev)
+
+	qm.next()
+	assert.Nil(t, qm.current.Prev)
+
+	qm.Del("cronos")
+	assert.Nil(t, qm.current.Prev)
+	assert.Nil(t, qm.current.Next.Next)
+	qm.Del("archi")
+	assert.Nil(t, qm.current.Prev)
+}
+
 func TestQueueManager_Del(t *testing.T) {
 	qm := NewQueueManager("dj", func(string) {})
 

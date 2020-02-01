@@ -270,6 +270,7 @@ func (qm *QueueManager) next() {
 			break
 		}
 		qm.current = next
+		qm.current.Prev = nil
 		qm.userStartTime = nil
 		qm.userStartsPlaying = nil
 		qm.start(0)
