@@ -18,6 +18,4 @@ server:
   user_name: dj
   user_password:
 player:
-  dir:
-  command: mpg321
-  args: -o pulse
+  dir: /home/dj/tracks
