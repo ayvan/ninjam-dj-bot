@@ -143,10 +143,13 @@ func main() {
 		}
 	}(bot)
 
+	r := regexp.MustCompile(`^` + bot.UserName() + `\s+(.*)`)
+
 f:
 	for {
 		select {
 		case s := <-sigChan:
+			logrus.Debug("sigChan signal received")
 			sigChan <- s
 			break f
 			// messages routers <->
@@ -165,7 +168,6 @@ f:
 					logrus.Info("Users after part: ", len(bot.Users()), bot.Users())
 				}()
 			case models.MSG:
-				r := regexp.MustCompile(`^` + bot.UserName() + `\s+(.*)`)
 				s := r.FindStringSubmatch(msg.Message.Text)
 
 				command := ""

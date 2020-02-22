@@ -210,7 +210,11 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 	}
 
 	jm.track = track
-	jm.LoadTrack(jm.track)
+	err = jm.LoadTrack(jm.track)
+	if err != nil {
+		msg = p.Sprintf(errorGeneral)
+		return
+	}
 	var repeats uint
 
 	if command.Duration != 0 {
@@ -253,7 +257,11 @@ func (jm *JamManager) StartPlaylist(id uint) (msg string) {
 		return p.Sprintf(errorGeneral)
 	}
 
-	jm.LoadTrack(jm.track)
+	err = jm.LoadTrack(jm.track)
+	if err != nil {
+		msg = p.Sprintf(errorGeneral)
+		return
+	}
 	jm.SetRepeats(playlist.Tracks[0].Repeats)
 	jm.playingMode = playingPlaylist
 
@@ -460,7 +468,11 @@ func (jm *JamManager) next() (msg string, ok bool) {
 			jm.jamChatBot.SendMessage(p.Sprintf(messageTimeout, t.Format("04:05")))
 		}
 
-		jm.LoadTrack(jm.track)
+		err = jm.LoadTrack(jm.track)
+		if err != nil {
+			msg = p.Sprintf(errorGeneral)
+			return
+		}
 		jm.SetRepeats(listTrack.Repeats)
 		jm.playingMode = playingPlaylist
 
@@ -558,11 +570,11 @@ func (jm *JamManager) SetRepeats(repeats uint) {
 	jm.repeats = repeats
 }
 
-func (jm *JamManager) LoadTrack(track *tracks.Track) {
+func (jm *JamManager) LoadTrack(track *tracks.Track) error {
 	if jm.jamPlayer == nil {
-		return
+		return fmt.Errorf("no jam player registered")
 	}
-	jm.jamPlayer.LoadTrack(track)
+	return jm.jamPlayer.LoadTrack(track)
 }
 
 func recoverer() {

@@ -86,7 +86,7 @@ func (jp *JamPlayer) Track() *tracks.Track {
 	return jp.track
 }
 
-func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
+func (jp *JamPlayer) LoadTrack(track *tracks.Track) error {
 	jp.track = track
 	filePath := track.FilePath
 
@@ -97,13 +97,15 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 	err := jp.setMP3Source(filePath)
 	if err != nil {
 		logrus.Error(err)
+		return err
 	}
 
 	jp.SetRepeats(0) // по-умолчанию повторы не заданы, их должны будут задать отдельно если запуск происходит из плейлиста
 
 	if jp.hostConfig == nil {
-		logrus.Error("hostConfig not found")
-		return
+		err = fmt.Errorf("hostConfig not found")
+		logrus.Error(err)
+		return err
 	}
 	jp.hostConfig.ValueMap["integrated"] = track.Integrated
 	jp.hostConfig.ValueMap["range"] = track.Range
@@ -111,6 +113,7 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) {
 	jp.hostConfig.ValueMap["shortterm"] = track.Shortterm
 	jp.hostConfig.ValueMap["momentary"] = track.Momentary
 
+	return nil
 }
 
 func (jp *JamPlayer) SetRepeats(repeats uint) {
@@ -127,7 +130,7 @@ func (jp *JamPlayer) setMP3Source(source string) error {
 
 	decoder, err := mp3.NewDecoder(out)
 	if err != nil {
-		return fmt.Errorf("NewDecoder error: %s", err)
+		return fmt.Errorf("NewDecoder error in %s: %s", source, err)
 	}
 
 	jp.source = decoder
@@ -190,6 +193,12 @@ func (jp *JamPlayer) Start() error {
 	endTime := time.Duration(jp.track.LoopEnd) * time.Microsecond
 	loopEndPos := timeToSamples(endTime, jp.sampleRate) - 1 // это позиция в слайсе, потому -1
 
+	if loopStartPos < 0 || loopEndPos < 0 {
+		err := fmt.Errorf("negative loop pos. Loop start pos: %d | Loop End Pos: %d", loopStartPos, loopEndPos)
+		logrus.Error(err)
+		return err
+	}
+
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
 	intervalSamplesChannels := intervalSamples * channels
@@ -203,15 +212,18 @@ func (jp *JamPlayer) Start() error {
 
 	samplesBuffer := make([][]float32, 2)
 
-	// эта переменная будет установлена когда буфер будет заполнен всеми данными из MP3 файла
-	//bufferFull := false
-
 	waitData := make(chan bool, 1)
+	errChan := make(chan error, 1)
+	defer func() {
+		close(waitData)
+		close(errChan)
+	}()
 	// это фоновая загрузка и декодирование MP3 в буфер
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logrus.Errorf("panic: %s\n trace: %s", r, string(debug.Stack()))
+				err := fmt.Errorf("panic: %s\n trace: %s", r, string(debug.Stack()))
+				errChan <- err
 			}
 		}()
 		intervalsReady := 0
@@ -226,13 +238,15 @@ func (jp *JamPlayer) Start() error {
 
 		for i, p := range jp.hostConfig.Plugins {
 			if lv2host.AddPluginInstance(host, p.PluginURI) != 0 {
-				logrus.Errorf("Cannot add plugin: %v\n", p.PluginURI)
+				err := fmt.Errorf("Cannot add plugin: %v\n", p.PluginURI)
+				errChan <- err
 				return
 			}
 			for param, val := range p.Data {
 				if lv2host.SetPluginParameter(host, uint32(i), param, val) != 0 {
-					logrus.Errorf("Cannot set plugin parameter: %v\n", param)
+					err := fmt.Errorf("Cannot set plugin parameter: %v\n", param)
 					lv2host.ListPluginParameters(host, uint32(i))
+					errChan <- err
 					return
 				}
 				logrus.Debugf("Setting '%v' to '%v'\n", param, val)
@@ -247,27 +261,36 @@ func (jp *JamPlayer) Start() error {
 		for {
 			// на случай если кто-то уже остановил плеер или сменил источник
 			if !jp.playing || jp.source != source {
+				err := fmt.Errorf("no playing or source changed")
+				errChan <- err
 				return
 			}
 			buf := audio.Float32{}.Make(intervalSamplesChannels, intervalSamplesChannels)
 			rs, err := toReadSeeker(source, intervalSamplesChannels)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
-				logrus.Errorf("source.Read error: %s", err)
+				err := fmt.Errorf("source.Read error: %s", err)
+				errChan <- err
+				return
 			}
 
 			var bufLen int
 			bufLen, err = rs.Read(buf)
 			if err != nil && err != io.EOF && err.Error() != "end of stream" {
-				logrus.Errorf("source.Read error: %s", err)
+				err := fmt.Errorf("source.Read error: %s", err)
+				errChan <- err
+				return
 			}
 			if bufLen == 0 {
 				//bufferFull = true
+				err := fmt.Errorf("error: bufLen == 0")
+				errChan <- err
 				return
 			}
 
 			deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32)[:bufLen], channels)
 			if err != nil {
-				logrus.Errorf("DeinterleaveSamples error: %s", err)
+				err := fmt.Errorf("DeinterleaveSamples error: %s", err)
+				errChan <- err
 				return
 			}
 
@@ -284,8 +307,13 @@ func (jp *JamPlayer) Start() error {
 		}
 	}()
 
-	// ждём пока будут готовы интервалы
-	<-waitData
+	// ждём пока будут готовы интервалы или ошибку
+	select {
+	case <-waitData:
+	case err := <-errChan:
+		logrus.Error(err)
+		return err
+	}
 	jp.onStart()
 
 	// TODO на выходе функции ловить ошибку и сообщать в чат что трек прерван из-за ошибки
