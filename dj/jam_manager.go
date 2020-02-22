@@ -149,11 +149,12 @@ func (jm *JamManager) Playlists() (res []tracks.Playlist) {
 func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 	defer recoverer()
 	count, err := jm.jamDB.CountTracks()
-
 	if err != nil {
 		logrus.Error(err)
 		return p.Sprintf(errorGeneral)
 	}
+
+	logrus.Debugf("tracks found: %d", count)
 
 	if count == 0 {
 		msg = p.Sprintf(messageCantStartRandomTrack)
@@ -208,6 +209,7 @@ func (jm *JamManager) PlayRandom(command lib.JamCommand) (msg string) {
 		}
 		break
 	}
+	logrus.Debugf("track found: %d %v", track.ID, track)
 
 	jm.track = track
 	err = jm.LoadTrack(jm.track)
@@ -301,7 +303,7 @@ func (jm *JamManager) Start() (msg string) {
 	jm.playing = true
 	err := jm.jamPlayer.Start()
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("jamPlayer.Start()", err)
 		jm.playing = false
 		return p.Sprintf(errorGeneral)
 	}

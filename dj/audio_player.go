@@ -93,7 +93,7 @@ func (jp *JamPlayer) LoadTrack(track *tracks.Track) error {
 	if !path.IsAbs(filePath) {
 		filePath = path.Join(jp.tracksPath, filePath)
 	}
-
+	logrus.Debugf("loading track %s", filePath)
 	err := jp.setMP3Source(filePath)
 	if err != nil {
 		logrus.Error(err)
@@ -192,12 +192,6 @@ func (jp *JamPlayer) Start() error {
 
 	endTime := time.Duration(jp.track.LoopEnd) * time.Microsecond
 	loopEndPos := timeToSamples(endTime, jp.sampleRate) - 1 // это позиция в слайсе, потому -1
-
-	if loopStartPos < 0 || loopEndPos < 0 {
-		err := fmt.Errorf("negative loop pos. Loop start pos: %d | Loop End Pos: %d", loopStartPos, loopEndPos)
-		logrus.Error(err)
-		return err
-	}
 
 	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
 	intervalSamples := int(math.Ceil(float64(jp.sampleRate) * intervalTime / float64(time.Second)))
@@ -312,6 +306,7 @@ func (jp *JamPlayer) Start() error {
 	case <-waitData:
 	case err := <-errChan:
 		logrus.Error(err)
+		jp.playing = false
 		return err
 	}
 	jp.onStart()
