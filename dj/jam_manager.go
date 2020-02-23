@@ -329,7 +329,7 @@ func (jm *JamManager) QueueStart() (msg string) {
 	}
 
 	// default queue time is 6 hours
-	jm.queueManager.OnStart(time.Hour*6, time.Second*5)
+	jm.queueManager.OnDelayedStart(time.Hour*6, time.Second*5, time.Second*15)
 
 	return p.Sprintf(messageQueueStarted)
 }

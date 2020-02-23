@@ -26,6 +26,7 @@ func init() {
 type QueueManager struct {
 	botName           string
 	userStartTime     *time.Time
+	delayedStartTime  *time.Time
 	userStartsPlaying *user
 
 	userPlayDuration  time.Duration
@@ -71,6 +72,11 @@ func (qm *QueueManager) supervisor() {
 				continue
 			}
 			if qm.userStartTime == nil {
+				continue
+			}
+			if qm.delayedStartTime != nil && qm.delayedStartTime.Before(time.Now()) {
+				qm.delayedStartTime = nil
+				qm.start(0)
 				continue
 			}
 			// если до конца трека осталось менее чем qm.userPlayDuration то ничего не делаем
@@ -347,14 +353,33 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 	}
 }
 
+func (qm *QueueManager) delayedStart(intervalDuration, delayDuration time.Duration) {
+	tn := time.Now().Add(intervalDuration).Add(delayDuration)
+	qm.delayedStartTime = &tn
+	qm.userStartTime = nil
+	qm.userStartsPlaying = nil
+	qm.stopped = false
+	if qm.current != nil && qm.sendMessage != nil {
+		qm.sendMessage(p.Sprintf(messageAfter15Seconds, qm.current.Name))
+		qm.after15SecMsgSent = true
+	}
+}
+
 func (qm *QueueManager) OnStart(trackDuration, intervalDuration time.Duration) {
 	qm.userPlayDuration = lib.CalcUserPlayDuration(trackDuration)
 	qm.trackEndTime = time.Now().Add(trackDuration)
 	qm.start(intervalDuration)
 }
 
+func (qm *QueueManager) OnDelayedStart(trackDuration, intervalDuration, delayDuration time.Duration) {
+	qm.userPlayDuration = lib.CalcUserPlayDuration(trackDuration)
+	qm.trackEndTime = time.Now().Add(trackDuration)
+	qm.delayedStart(intervalDuration, delayDuration)
+}
+
 func (qm *QueueManager) OnStop() {
 	qm.stopped = true
+	qm.delayedStartTime = nil
 }
 
 func (qm *QueueManager) OnUserinfoChange(user models.UserInfo) {
