@@ -71,12 +71,12 @@ func (qm *QueueManager) supervisor() {
 			if qm.stopped {
 				continue
 			}
-			if qm.userStartTime == nil {
-				continue
-			}
 			if qm.delayedStartTime != nil && qm.delayedStartTime.Before(time.Now()) {
 				qm.delayedStartTime = nil
 				qm.start(0)
+				continue
+			}
+			if qm.userStartTime == nil {
 				continue
 			}
 			// если до конца трека осталось менее чем qm.userPlayDuration то ничего не делаем
