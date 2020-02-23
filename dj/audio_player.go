@@ -208,10 +208,6 @@ func (jp *JamPlayer) Start() error {
 
 	waitData := make(chan bool, 1)
 	errChan := make(chan error, 1)
-	defer func() {
-		close(waitData)
-		close(errChan)
-	}()
 	// это фоновая загрузка и декодирование MP3 в буфер
 	go func() {
 		defer func() {
