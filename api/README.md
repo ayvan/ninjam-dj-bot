@@ -431,3 +431,44 @@ Example request:
   "name":"Rock"
 }
 ```
+
+
+**GET /v1/queue/users**
+
+HTTP codes:
+200
+
+Example response:
+```json
+{
+  "users":["Burillo","Dig"]
+}
+```
+
+
+**POST /v1/queue/{command}**
+
+Commands list:
+```
+start
+finish
+next
+```
+
+HTTP codes:
+200
+400
+
+Example 200 response:
+```json
+{
+  "message":"queue started"
+}
+```
+
+Example 400 response:
+```json
+{
+  "error":"unable to recognize API command"
+}
+```

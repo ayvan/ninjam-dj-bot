@@ -18,6 +18,7 @@ const (
 	messageAlreadyStarted               = "playing already started"
 	messageCantStartRandomTrack         = "can't start random track"
 	messageUnableToRecognizeCommand     = "unable to recognize command, please use 'dj help'' to get the list and format of the available commands"
+	messageUnableToRecognizeAPICommand  = "unable to recognize API command"
 	messagePlayingTrack                 = "playing track %s, playback duration %s"
 	messageQueueStarted                 = "queue started"
 	messageQueueFinished                = "queue finished"
@@ -58,6 +59,7 @@ func init() {
 	message.SetString(language.Russian, messageAlreadyStarted, "воспроизведение уже запущено")
 	message.SetString(language.Russian, messageCantStartRandomTrack, "не удалось запустить случайный трек")
 	message.SetString(language.Russian, messageUnableToRecognizeCommand, "невозможно распознать команду, используйте 'dj help' для получения списка и формата доступных команд")
+	message.SetString(language.Russian, messageUnableToRecognizeAPICommand, "невозможно распознать команду API")
 	message.SetString(language.Russian, messagePlayingTrack, "запущен трек %s, длительность воспроизведения %s")
 	message.SetString(language.Russian, messageTimeout, "перерыв %s")
 	message.SetString(language.Russian, topicPlayingTrack, "играет трек %s")
@@ -398,7 +400,7 @@ func (jm *JamManager) APICommand(command string, userName string) (msg string, e
 		jm.queueManager.next()
 		msg = p.Sprintf(messageQueueNext)
 	default:
-		err = fmt.Errorf(p.Sprintf(messageUnableToRecognizeCommand))
+		err = fmt.Errorf(p.Sprintf(messageUnableToRecognizeAPICommand))
 		return
 	}
 	if msg != "" {
