@@ -21,6 +21,7 @@ const (
 	messagePlayingTrack                 = "playing track %s, playback duration %s"
 	messageQueueStarted                 = "queue started"
 	messageQueueFinished                = "queue finished"
+	messageQueueNext                    = "queue switched to next participant"
 	messageQueueCantStartPlayingTrack   = "can't start queue, the track is playing"
 	messageQueueCantStartAlreadyStarted = "can't start queue, already started"
 	messageQueueCantFinishNotStarted    = "can't finish queue, not started"
@@ -62,6 +63,7 @@ func init() {
 	message.SetString(language.Russian, topicPlayingTrack, "играет трек %s")
 	message.SetString(language.Russian, messageQueueStarted, "очередь запущена")
 	message.SetString(language.Russian, messageQueueFinished, "очередь остановлена")
+	message.SetString(language.Russian, messageQueueNext, "очередь переключена на следующего участника")
 	message.SetString(language.Russian, messageQueueCantStartPlayingTrack, "нельзя запустить очередь, играет трек")
 	message.SetString(language.Russian, messageQueueCantStartAlreadyStarted, "нельзя запустить очередь, уже запущена")
 	message.SetString(language.Russian, messageQueueCantFinishNotStarted, "нельзя остановить очередь, не запущена")
@@ -386,6 +388,26 @@ func (jm *JamManager) Help() (msg string) {
 	return
 }
 
+func (jm *JamManager) APICommand(command string, userName string) (msg string, err error) {
+	switch command {
+	case "start":
+		msg = jm.QueueStart()
+	case "finish":
+		msg = jm.QueueFinish()
+	case "next":
+		jm.queueManager.next()
+		msg = p.Sprintf(messageQueueNext)
+	default:
+		err = fmt.Errorf(p.Sprintf(messageUnableToRecognizeCommand))
+		return
+	}
+	if msg != "" {
+		jm.jamChatBot.SendMessage(msg)
+	}
+
+	return msg, nil
+}
+
 func (jm *JamManager) Command(chatCommand string, userName string) string {
 	defer recoverer()
 
@@ -577,6 +599,10 @@ func (jm *JamManager) LoadTrack(track *tracks.Track) error {
 		return fmt.Errorf("no jam player registered")
 	}
 	return jm.jamPlayer.LoadTrack(track)
+}
+
+func (jm *JamManager) Users() []string {
+	return jm.queueManager.Users()
 }
 
 func recoverer() {

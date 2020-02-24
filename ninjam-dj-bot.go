@@ -40,8 +40,6 @@ func main() {
 	}
 	api.Init(jamDB, authDB)
 
-	go api.Run("0.0.0.0:" + config.Get().HTTPPort)
-
 	pidFile := config.Get().AppPidPath
 
 	if pidFile != "" {
@@ -92,6 +90,8 @@ func main() {
 	bot.SetOnServerConfigChange(jp.OnServerConfigChange)
 
 	jamManager := dj.NewJamManager(jamDB, jp, bot)
+
+	go api.Run("0.0.0.0:"+config.Get().HTTPPort, jamManager)
 
 	// инициализируем глобальный канал завершения горутин
 	sigChan := make(chan bool, 1)

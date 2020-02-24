@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/ayvan/ninjam-dj-bot/dj"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"net/http"
@@ -18,7 +19,7 @@ func init() {
 
 // Run app
 // Run(""0.0.0.0:8080")
-func Run(hostAndPort string) {
+func Run(hostAndPort string, jamManager *dj.JamManager) {
 	routes := Echo.Group("/v1")
 
 	routes.Use(NoCacheHeaders)
@@ -45,6 +46,10 @@ func Run(hostAndPort string) {
 	routes.GET("/authors/:id", Author)
 	routes.PUT("/authors/:id", PutAuthor)
 	routes.POST("/authors", PostAuthor)
+
+	queueController := QueueController{jm: jamManager}
+	routes.GET("/queue/users", queueController.Users)
+	routes.POST("/queue/:command", queueController.Command)
 
 	routes.GET("/test", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "ok"})

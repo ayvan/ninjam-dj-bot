@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/ayvan/ninjam-dj-bot/auth"
 	"github.com/ayvan/ninjam-dj-bot/config"
+	"github.com/ayvan/ninjam-dj-bot/dj"
 	"github.com/ayvan/ninjam-dj-bot/helpers"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
 	"github.com/ayvan/ninjam-dj-bot/tracks_sync"
@@ -430,4 +431,34 @@ func newError(code int, message ...string) ErrorResp {
 	}
 
 	return ErrorResp{Error: msg, Code: code}
+}
+
+type QueueController struct {
+	jm *dj.JamManager
+}
+
+// Queue users GET /queue/
+func (c QueueController) Users(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, struct {
+		Users []string `json:"users"`
+	}{
+		Users: c.jm.Users(),
+	})
+}
+
+// Queue command POST /queue/:command
+func (c QueueController) Command(ctx echo.Context) error {
+	command := ctx.Param("command")
+	msg, err := c.jm.APICommand(command, "")
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, struct {
+			Error string `json:"error"`
+		}{Error: err.Error()})
+	}
+
+	return ctx.JSON(http.StatusOK, struct {
+		Message string `json:"message"`
+	}{
+		Message: msg,
+	})
 }
