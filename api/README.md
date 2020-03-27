@@ -8,6 +8,21 @@
 /v1/tracks/10
 ```
 
+Для адресации к API требуется указывать в адресе порт сервера, на котором расположен бот, как префикс пути:
+
+```
+/2050/
+```
+или
+```
+/2051/
+```
+
+Например:
+```
+/2050/v1/login
+```
+
 Перед использованием методов API следует авторизоваться:
 
 **POST /v1/login**
@@ -453,6 +468,17 @@ Commands list:
 start
 finish
 next
+```
+
+Commands to join or leave queue, requires "user" query parameter:
+```
+leave
+join
+```
+
+Query parameter for leave and join:
+```
+user string - username (without @{ip}, only username before @ symbol)
 ```
 
 HTTP codes:

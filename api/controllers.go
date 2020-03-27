@@ -449,7 +449,9 @@ func (c QueueController) Users(ctx echo.Context) error {
 // Queue command POST /queue/:command
 func (c QueueController) Command(ctx echo.Context) error {
 	command := ctx.Param("command")
-	msg, err := c.jm.APICommand(command, "")
+	username := ctx.QueryParam("user")
+
+	msg, err := c.jm.APICommand(command, username)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, struct {
 			Error string `json:"error"`
