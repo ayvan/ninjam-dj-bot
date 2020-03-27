@@ -119,6 +119,7 @@ type JamChatBot interface {
 	SendAdminMessage(string)
 	UserName() string
 	SetOnUserinfoChange(f func(user models.UserInfo))
+	Users() []string
 }
 
 type JamManager struct {
@@ -393,6 +394,26 @@ func (jm *JamManager) Help() (msg string) {
 }
 
 func (jm *JamManager) APICommand(command string, userName string) (msg string, err error) {
+	if command == "leave" || command == "join" {
+		if userName == "" {
+			return "", fmt.Errorf(p.Sprintf(messageUserNotFound, "<empty string>"))
+		}
+
+		users := jm.jamChatBot.Users()
+
+		var found bool
+		for _, u := range users {
+			if u == userName {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return "", fmt.Errorf(p.Sprintf(messageUserNotFound, userName))
+		}
+	}
+
 	switch command {
 	case "start":
 		msg = jm.QueueStart()

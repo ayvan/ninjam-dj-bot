@@ -131,7 +131,6 @@ func (qm *QueueManager) Users() (users []string) {
 }
 
 func (qm *QueueManager) Add(userName string) bool {
-	userName = cleanName(userName)
 	if userName == qm.botName {
 		return false
 	}
@@ -175,7 +174,6 @@ func (qm *QueueManager) Add(userName string) bool {
 }
 
 func (qm *QueueManager) checkExists(userName string) bool {
-	userName = cleanName(userName)
 	if userName == qm.botName {
 		return false
 	}
@@ -222,7 +220,6 @@ func (qm *QueueManager) Del(userName string) bool {
 		}
 	}()
 
-	userName = cleanName(userName)
 	if userName == qm.botName {
 		return false
 	}
@@ -394,6 +391,7 @@ func (qm *QueueManager) OnUserinfoChange(user models.UserInfo) {
 	qm.Del(string(user.Name))
 }
 
+// @deprecated
 func cleanName(userName string) string {
 	i := strings.Index(userName, "@")
 	if i < 0 {
