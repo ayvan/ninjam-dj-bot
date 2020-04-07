@@ -10,6 +10,7 @@ private_key_path: ./private.pem
 default_admin_password: derparol
 tracks_dir: ./tracks
 lv2host_config: lv2host.yaml
+lv2speech_config: lv2speech.yaml
 daemon: false
 server:
   host: guitar-jam.ru

@@ -24,6 +24,9 @@ const (
 	messageQueueStarted                 = "queue started"
 	messageQueueFinished                = "queue finished"
 	messageQueueNext                    = "queue switched to next participant"
+	messageAfter15Seconds               = "%s's turn in 15 seconds"
+	messageNowPlaying                   = "%s is playing now"
+	messageIsNext                       = "%s is next"
 	messageQueueCantStartPlayingTrack   = "can't start queue, the track is playing"
 	messageQueueCantStartAlreadyStarted = "can't start queue, already started"
 	messageQueueCantFinishNotStarted    = "can't finish queue, not started"
@@ -68,6 +71,9 @@ func init() {
 	message.SetString(language.Russian, messageQueueStarted, "очередь запущена")
 	message.SetString(language.Russian, messageQueueFinished, "очередь остановлена")
 	message.SetString(language.Russian, messageQueueNext, "очередь переключена на следующего участника")
+	message.SetString(language.Russian, messageAfter15Seconds, "очередь %s через 15 секунд")
+	message.SetString(language.Russian, messageNowPlaying, "сейчас играет %s")
+	message.SetString(language.Russian, messageIsNext, "готовится играть %s")
 	message.SetString(language.Russian, messageQueueCantStartPlayingTrack, "нельзя запустить очередь, играет трек")
 	message.SetString(language.Russian, messageQueueCantStartAlreadyStarted, "нельзя запустить очередь, уже запущена")
 	message.SetString(language.Russian, messageQueueCantFinishNotStarted, "нельзя остановить очередь, не запущена")
@@ -137,11 +143,17 @@ type JamManager struct {
 }
 
 func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, chatBot JamChatBot) *JamManager {
+
+	sendMsgFunc := func(msg string) {
+		chatBot.SendMessage(msg)
+		player.PlayText(config.Language.String(), msg)
+	}
+
 	jm := &JamManager{
 		jamPlayer:    player,
 		jamDB:        jamDB,
 		jamChatBot:   chatBot,
-		queueManager: NewQueueManager(chatBot.UserName(), chatBot.SendMessage),
+		queueManager: NewQueueManager(chatBot.UserName(), sendMsgFunc),
 	}
 	chatBot.SetOnUserinfoChange(jm.queueManager.OnUserinfoChange)
 	player.SetOnStop(jm.onStop)
@@ -338,7 +350,9 @@ func (jm *JamManager) QueueStart() (msg string) {
 	// default queue time is 6 hours
 	jm.queueManager.OnDelayedStart(time.Hour*6, time.Second*5, time.Second*15)
 
-	return p.Sprintf(messageQueueStarted)
+	msg = p.Sprintf(messageQueueStarted)
+	jm.jamPlayer.PlayText(config.Language.String(), msg)
+	return
 }
 
 func (jm *JamManager) QueueFinish() (msg string) {
@@ -352,7 +366,9 @@ func (jm *JamManager) QueueFinish() (msg string) {
 
 	jm.queueManager.OnStop()
 
-	return p.Sprintf(messageQueueFinished)
+	msg = p.Sprintf(messageQueueFinished)
+	jm.jamPlayer.PlayText(config.Language.String(), msg)
+	return
 }
 
 func (jm *JamManager) QueueLeave(userName string) (msg string) {
@@ -422,6 +438,7 @@ func (jm *JamManager) APICommand(command string, userName string) (msg string, e
 	case "next":
 		jm.queueManager.next()
 		msg = p.Sprintf(messageQueueNext)
+		jm.jamPlayer.PlayText(config.Language.String(), msg)
 	case "join":
 		ok := jm.queueManager.Add(userName)
 		if ok {

@@ -23,23 +23,25 @@ const (
 	CommandQNext
 	CommandQLeave
 	CommandQJoin
+	CommandVoiceTest
 )
 
 var commandAliases = map[uint][]string{
-	CommandRandom:   {"random"},
-	CommandTrack:    {"track"},
-	CommandPlaylist: {"playlist", "list"},
-	CommandStop:     {"stop"},
-	CommandPlay:     {"play", "start"},
-	CommandNext:     {"next"},
-	CommandPrev:     {"prev", "previous"},
-	CommandPlaying:  {"playing", "current", "now"},
-	CommandHelp:     {"help"},
-	CommandQStart:   {"qstart", "qs"},
-	CommandQFinish:  {"qfinish", "qf"},
-	CommandQNext:    {"qnext", "qn"},
-	CommandQLeave:   {"qleave", "ql"},
-	CommandQJoin:    {"qjoin", "qj"},
+	CommandRandom:    {"random"},
+	CommandTrack:     {"track"},
+	CommandPlaylist:  {"playlist", "list"},
+	CommandStop:      {"stop"},
+	CommandPlay:      {"play", "start"},
+	CommandNext:      {"next"},
+	CommandPrev:      {"prev", "previous"},
+	CommandPlaying:   {"playing", "current", "now"},
+	CommandHelp:      {"help"},
+	CommandQStart:    {"qstart", "qs"},
+	CommandQFinish:   {"qfinish", "qf"},
+	CommandQNext:     {"qnext", "qn"},
+	CommandQLeave:    {"qleave", "ql"},
+	CommandQJoin:     {"qjoin", "qj"},
+	CommandVoiceTest: {"vt"},
 }
 
 var commandMap = make(map[string]uint)

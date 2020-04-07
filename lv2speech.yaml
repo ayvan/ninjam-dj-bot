@@ -1,0 +1,25 @@
+plugins:
+  # filter out the low lows
+  - pluginUri: http://calf.sourceforge.net/plugins/Filter
+    parameters:
+      freq: "150"
+      res: "0.707"
+      mode: "3"
+      inertia: "5"
+  # control macro dynamics
+  - pluginUri: http://calf.sourceforge.net/plugins/Compressor
+    parameters:
+      bypass: "1"
+      threshold: "linear(-25)"
+      ratio: "10"
+      attack: "30"
+      release: "150"
+      makeup: "linear(30)"
+      knee: "3"
+      detection: "0"
+  # limit your master!
+  - pluginUri: http://gareus.org/oss/lv2/dpl#stereo
+    parameters:
+      gain: "0"
+      threshold: "-0.5"
+      release: "0.010"

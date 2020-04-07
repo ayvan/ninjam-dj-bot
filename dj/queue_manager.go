@@ -4,24 +4,10 @@ import (
 	"github.com/ayvan/ninjam-chatbot/models"
 	"github.com/ayvan/ninjam-dj-bot/lib"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 	"strings"
 	"sync"
 	"time"
 )
-
-const (
-	messageAfter15Seconds = "%s's turn in 15 seconds"
-	messageNowPlaying     = "%s is playing now"
-	messageIsNext         = "%s is next"
-)
-
-func init() {
-	message.SetString(language.Russian, messageAfter15Seconds, "очередь %s через 15 секунд")
-	message.SetString(language.Russian, messageNowPlaying, "сейчас играет %s")
-	message.SetString(language.Russian, messageIsNext, "готовится играть %s")
-}
 
 type QueueManager struct {
 	botName           string

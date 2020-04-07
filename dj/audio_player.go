@@ -1,9 +1,11 @@
 package dj
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/ayvan/ninjam-dj-bot/tracks"
+	"github.com/ayvan/ninjam-dj-bot/tts"
 	"github.com/azul3d/engine/audio"
 	"github.com/burillo-se/lv2host-go/lv2host"
 	"github.com/burillo-se/lv2hostconfig"
@@ -11,11 +13,13 @@ import (
 	"github.com/hajimehoshi/go-mp3"
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/tosone/minimp3"
 	"io"
 	"math"
 	"os"
 	"path"
 	"runtime/debug"
+	"sync"
 	"time"
 )
 
@@ -29,20 +33,22 @@ type JamBot interface {
 }
 
 type JamPlayer struct {
-	track       *tracks.Track
-	tracksPath  string
-	source      io.Reader
-	sampleRate  int
-	bpm         uint
-	bpi         uint
-	repeats     uint
-	ninjamBot   JamBot
-	stop        chan bool
-	playing     bool
-	hostConfig  *lv2hostconfig.LV2HostConfig
-	onStopFunc  func()
-	onStartFunc func()
-	bpmBPIOnSet bool // set if bot called set bpm/bpi to ignore OnServerConfigChange callback
+	track        *tracks.Track
+	tracksPath   string
+	source       io.Reader
+	sampleRate   int
+	bpm          uint
+	bpi          uint
+	repeats      uint
+	ninjamBot    JamBot
+	stop         chan bool
+	playing      bool
+	hostConfig   *lv2hostconfig.LV2HostConfig
+	speechConfig *lv2hostconfig.LV2HostConfig
+	onStopFunc   func()
+	onStartFunc  func()
+	bpmBPIOnSet  bool // set if bot called set bpm/bpi to ignore OnServerConfigChange callback
+	voiceMtx     *sync.Mutex
 }
 
 type AudioInterval struct {
@@ -54,8 +60,8 @@ type AudioInterval struct {
 }
 
 // TODO получать сообщения о смене bpm/bpi и форсить их назад
-func NewJamPlayer(tracksPath string, ninjamBot JamBot, lv2hostConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
-	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig}
+func NewJamPlayer(tracksPath string, ninjamBot JamBot, lv2hostConfig, lv2speechConfig *lv2hostconfig.LV2HostConfig) *JamPlayer {
+	return &JamPlayer{ninjamBot: ninjamBot, tracksPath: tracksPath, stop: make(chan bool, 1), hostConfig: lv2hostConfig, speechConfig: lv2speechConfig, voiceMtx: new(sync.Mutex)}
 }
 
 func (jp *JamPlayer) SetOnStart(f func()) {
@@ -218,29 +224,11 @@ func (jp *JamPlayer) Start() error {
 		}()
 		intervalsReady := 0
 
-		err := jp.hostConfig.Evaluate()
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
 		// initialize LV2 plugins
-		host := lv2host.Alloc(float64(jp.sampleRate))
-
-		for i, p := range jp.hostConfig.Plugins {
-			if lv2host.AddPluginInstance(host, p.PluginURI) != 0 {
-				err := fmt.Errorf("Cannot add plugin: %v\n", p.PluginURI)
-				errChan <- err
-				return
-			}
-			for param, val := range p.Data {
-				if lv2host.SetPluginParameter(host, uint32(i), param, val) != 0 {
-					err := fmt.Errorf("Cannot set plugin parameter: %v\n", param)
-					lv2host.ListPluginParameters(host, uint32(i))
-					errChan <- err
-					return
-				}
-				logrus.Debugf("Setting '%v' to '%v'\n", param, val)
-			}
+		host, err := jp.prepareLV2Host(float64(jp.sampleRate), jp.hostConfig)
+		if err != nil {
+			errChan <- err
+			return
 		}
 
 		lv2host.Activate(host)
@@ -503,4 +491,140 @@ func (jp *JamPlayer) OnServerConfigChange(bpm, bpi uint) {
 			jp.setBPI(jp.track.BPI)
 		}
 	}
+}
+
+func (jp *JamPlayer) PlayText(lang, text string) {
+	go func() {
+		defer recoverer()
+
+		data, err := tts.Say(lang, text, false)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+
+		err = jp.playVoice(data)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+}
+
+func (jp *JamPlayer) playVoice(b []byte) (err error) {
+	jp.voiceMtx.Lock()
+	defer jp.voiceMtx.Unlock()
+
+	dec, data, _ := minimp3.DecodeFull(b)
+
+	rd := bytes.NewReader(data)
+
+	buf := audio.Float32{}.Make(len(data), len(data))
+	rs, err := toReadSeeker(rd, len(data))
+	if err != nil && err != io.EOF && err.Error() != "end of stream" {
+		err = fmt.Errorf("source.Read error: %s", err)
+		return
+	}
+
+	var bufLen int
+	bufLen, err = rs.Read(buf)
+	if err != nil && err != io.EOF && err.Error() != "end of stream" {
+		err = fmt.Errorf("source.Read error: %s", err)
+		return
+	}
+	if bufLen == 0 {
+		err = fmt.Errorf("error: bufLen == 0")
+		return
+	}
+
+	if jp.speechConfig == nil {
+		err = fmt.Errorf("speechConfig not found")
+		logrus.Error(err)
+		return err
+	}
+
+	// initialize LV2 plugins
+	host, err := jp.prepareLV2Host(float64(dec.SampleRate), jp.speechConfig)
+	if err != nil {
+		return err
+	}
+
+	lv2host.Activate(host)
+	defer lv2host.Free(host)
+
+	deinterleavedSamples, err := ninjamencoder.DeinterleaveSamples(buf.(audio.Float32)[:bufLen], dec.Channels)
+	if err != nil {
+		err = fmt.Errorf("DeinterleaveSamples error: %s", err)
+		return
+	}
+
+	// if only 1 channel - make it double for left and right channel
+	if len(deinterleavedSamples) == 1 {
+		deinterleavedSamples = append(deinterleavedSamples, deinterleavedSamples...)
+	}
+
+	lv2host.ProcessBuffer(host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(len(deinterleavedSamples[0])))
+
+	oggEncoder := ninjamencoder.NewEncoder()
+	oggEncoder.SampleRate = dec.SampleRate
+
+	oggData, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
+	if err != nil {
+		logrus.Errorf("EncodeNinjamInterval error: %s", err)
+		return
+	}
+
+	guid, _ := uuid.NewV1()
+
+	interval := AudioInterval{
+		GUID:         guid,
+		ChannelIndex: 1,
+		Flags:        0,
+		Data:         oggData,
+	}
+
+	jp.ninjamBot.IntervalBegin(interval.GUID, interval.ChannelIndex)
+
+	hasNext := true
+	for hasNext {
+		var intervalData []byte
+
+		intervalData, hasNext = interval.next()
+
+		if !hasNext {
+			interval.Flags = 1
+		}
+
+		jp.ninjamBot.IntervalWrite(interval.GUID, intervalData, interval.Flags)
+	}
+
+	return nil
+}
+
+func (jp *JamPlayer) prepareLV2Host(sampleRate float64, config *lv2hostconfig.LV2HostConfig) (*lv2host.CLV2Host, error) {
+	err := config.Evaluate()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	// initialize LV2 plugins
+	host := lv2host.Alloc(sampleRate)
+
+	for i, p := range config.Plugins {
+		if lv2host.AddPluginInstance(host, p.PluginURI) != 0 {
+			err := fmt.Errorf("Cannot add plugin: %v\n", p.PluginURI)
+			return nil, err
+		}
+		logrus.Debugf("Add plugin %s'\n", p.PluginURI)
+
+		for param, val := range p.Data {
+			if lv2host.SetPluginParameter(host, uint32(i), param, val) != 0 {
+				err := fmt.Errorf("Cannot set plugin parameter: %v\n", param)
+				lv2host.ListPluginParameters(host, uint32(i))
+				return nil, err
+			}
+			logrus.Debugf("Setting '%v' to '%v'\n", param, val)
+		}
+	}
+
+	return host, nil
 }

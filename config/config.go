@@ -27,6 +27,7 @@ type AppConfig struct {
 	PrivateKeyPath       string       `yaml:"private_key_path"`
 	DefaultAdminPassword string       `yaml:"default_admin_password"`
 	LV2HostConfig        string       `yaml:"lv2host_config"`
+	LV2SpeechConfig      string       `yaml:"lv2speech_config"`
 	DaemonMode           bool         `yaml:"daemon"`
 	AppName              string       `yaml:"app_name"`
 	LogFile              string       `yaml:"log_file"`

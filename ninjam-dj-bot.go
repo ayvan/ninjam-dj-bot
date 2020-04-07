@@ -58,9 +58,13 @@ func main() {
 	}
 
 	lv2hostConfigPath := config.Get().LV2HostConfig
+	lv2speechConfigPath := config.Get().LV2SpeechConfig
 
-	hostconfig := lv2hostconfig.NewLV2HostConfig()
-	hostconfig.ReadFile(lv2hostConfigPath)
+	hostConfig := lv2hostconfig.NewLV2HostConfig()
+	hostConfig.ReadFile(lv2hostConfigPath)
+
+	speechConfig := lv2hostconfig.NewLV2HostConfig()
+	speechConfig.ReadFile(lv2speechConfigPath)
 
 	sChan := make(chan os.Signal, 1)
 	// ловим команды на завершение от ОС и корректно завершаем приложение с помощью sync.WaitGroup
@@ -79,12 +83,13 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	jp := dj.NewJamPlayer(dir, bot, hostconfig)
+	jp := dj.NewJamPlayer(dir, bot, hostConfig, speechConfig)
 
 	tracks_sync.Init(dir, jamDB)
 
 	bot.SetOnSuccessAuth(func() {
 		bot.ChannelInit("BackingTrack")
+		bot.ChannelInit("Voice", 2)
 	})
 
 	bot.SetOnServerConfigChange(jp.OnServerConfigChange)
