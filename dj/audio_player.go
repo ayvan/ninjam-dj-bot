@@ -14,6 +14,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/tosone/minimp3"
+	"github.com/zaf/resample"
 	"io"
 	"math"
 	"os"
@@ -516,6 +517,11 @@ func (jp *JamPlayer) playVoice(b []byte) (err error) {
 
 	dec, data, _ := minimp3.DecodeFull(b)
 
+	sampleRate, data, err := resampleAudio(dec.SampleRate, dec.Channels, data)
+	if err != nil {
+		return
+	}
+
 	rd := bytes.NewReader(data)
 
 	buf := audio.Float32{}.Make(len(data), len(data))
@@ -543,7 +549,7 @@ func (jp *JamPlayer) playVoice(b []byte) (err error) {
 	}
 
 	// initialize LV2 plugins
-	host, err := jp.prepareLV2Host(float64(dec.SampleRate), jp.speechConfig)
+	host, err := jp.prepareLV2Host(float64(sampleRate), jp.speechConfig)
 	if err != nil {
 		return err
 	}
@@ -565,7 +571,7 @@ func (jp *JamPlayer) playVoice(b []byte) (err error) {
 	lv2host.ProcessBuffer(host, deinterleavedSamples[0], deinterleavedSamples[1], uint32(len(deinterleavedSamples[0])))
 
 	oggEncoder := ninjamencoder.NewEncoder()
-	oggEncoder.SampleRate = dec.SampleRate
+	oggEncoder.SampleRate = sampleRate
 
 	oggData, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
 	if err != nil {
@@ -627,4 +633,28 @@ func (jp *JamPlayer) prepareLV2Host(sampleRate float64, config *lv2hostconfig.LV
 	}
 
 	return host, nil
+}
+
+func resampleAudio(sampleRate int, channels int, data []byte) (outputRate int, output []byte, err error) {
+
+	output = make([]byte, 0)
+	outputRate = 44100
+
+	buf := bytes.NewBuffer(output)
+	resampler, err := resample.New(buf, float64(sampleRate), float64(outputRate), channels, resample.I16, resample.HighQ)
+	if err != nil {
+		return
+	}
+
+	i, err := resampler.Write(data)
+	if err != nil {
+		return
+	}
+	if i == 0 {
+		err = fmt.Errorf("empty result")
+	}
+
+	output = buf.Bytes()
+
+	return
 }

@@ -9,7 +9,7 @@ plugins:
   # control macro dynamics
   - pluginUri: http://calf.sourceforge.net/plugins/Compressor
     parameters:
-      bypass: "1"
+      bypass: "0"
       threshold: "linear(-25)"
       ratio: "10"
       attack: "30"
