@@ -18,6 +18,7 @@ type QueueManager struct {
 	userPlayDuration  time.Duration
 	trackEndTime      time.Time
 	sendMessage       func(msg string)
+	sendVoiceMessage  func(msg string)
 	first             *user
 	current           *user
 	after15SecMsgSent bool // флаг что сообщение messageAfter15Seconds уже отправлено
@@ -33,8 +34,8 @@ type user struct {
 	Next *user
 }
 
-func NewQueueManager(botName string, sendMessageFunc func(msg string)) *QueueManager {
-	qm := &QueueManager{botName: botName, sendMessage: sendMessageFunc}
+func NewQueueManager(botName string, sendMessageFunc, sendVoiceMessageFunc func(msg string)) *QueueManager {
+	qm := &QueueManager{botName: botName, sendMessage: sendMessageFunc, sendVoiceMessage: sendVoiceMessageFunc}
 	qm.stopChannel = make(chan bool, 1)
 	qm.mtx = new(sync.Mutex)
 	qm.stopped = true
@@ -73,6 +74,9 @@ func (qm *QueueManager) supervisor() {
 				qm.userStartTime.Add(qm.userPlayDuration+time.Second*15).After(time.Now()) {
 				if qm.current != nil && qm.current.Next != nil && qm.sendMessage != nil && !qm.after15SecMsgSent {
 					qm.sendMessage(p.Sprintf(messageAfter15Seconds, qm.current.Next.Name))
+					if qm.sendVoiceMessage != nil {
+						qm.sendVoiceMessage(p.Sprintf(messageAfter15Seconds, cleanName(qm.current.Next.Name)))
+					}
 					qm.after15SecMsgSent = true
 				}
 				continue
@@ -334,8 +338,14 @@ func (qm *QueueManager) start(intervalDuration time.Duration) {
 		// если до конца трека осталось примерно время игры одного музыканта - не объявляем следующего
 		if qm.current.Next == nil || time.Now().Add(qm.userPlayDuration+time.Second*10).After(qm.trackEndTime) {
 			qm.sendMessage(p.Sprintf(messageNowPlaying, qm.current.Name))
+			if qm.sendVoiceMessage != nil {
+				qm.sendVoiceMessage(p.Sprintf(messageNowPlaying, cleanName(qm.current.Name)))
+			}
 		} else {
 			qm.sendMessage(p.Sprintf(messageNowPlaying, qm.current.Name) + ", " + p.Sprintf(messageIsNext, qm.current.Next.Name))
+			if qm.sendVoiceMessage != nil {
+				qm.sendVoiceMessage(p.Sprintf(messageNowPlaying, cleanName(qm.current.Name)) + ", " + p.Sprintf(messageIsNext, cleanName(qm.current.Next.Name)))
+			}
 		}
 	}
 }
@@ -348,6 +358,9 @@ func (qm *QueueManager) delayedStart(intervalDuration, delayDuration time.Durati
 	qm.stopped = false
 	if qm.current != nil && qm.sendMessage != nil {
 		qm.sendMessage(p.Sprintf(messageAfter15Seconds, qm.current.Name))
+		if qm.sendVoiceMessage != nil {
+			qm.sendVoiceMessage(p.Sprintf(messageAfter15Seconds, cleanName(qm.current.Name)))
+		}
 		qm.after15SecMsgSent = true
 	}
 }

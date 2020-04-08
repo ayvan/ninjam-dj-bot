@@ -8,7 +8,7 @@ import (
 )
 
 func TestQueueManager_Add(t *testing.T) {
-	qm := NewQueueManager("dj", func(string) {})
+	qm := NewQueueManager("dj", func(string) {}, func(string) {})
 
 	assert.Equal(t, uint(0), qm.UsersCount())
 
@@ -46,7 +46,7 @@ func TestQueueManager_Add(t *testing.T) {
 }
 
 func TestQueueManager_queue(t *testing.T) {
-	qm := NewQueueManager("dj", func(string) {})
+	qm := NewQueueManager("dj", func(string) {}, func(string) {})
 
 	qm.Add("burillo")
 	assert.Nil(t, qm.current.Prev)
@@ -78,7 +78,7 @@ func TestQueueManager_queue(t *testing.T) {
 }
 
 func TestQueueManager_Del(t *testing.T) {
-	qm := NewQueueManager("dj", func(string) {})
+	qm := NewQueueManager("dj", func(string) {}, func(string) {})
 
 	assert.Equal(t, uint(0), qm.UsersCount())
 
@@ -134,7 +134,7 @@ func TestQueueManager_Del(t *testing.T) {
 }
 
 func TestQueueManager_Del_2(t *testing.T) {
-	qm := NewQueueManager("dj", func(string) {})
+	qm := NewQueueManager("dj", func(string) {}, func(string) {})
 
 	assert.Equal(t, uint(0), qm.UsersCount())
 
@@ -178,6 +178,8 @@ func TestQueueManager_Del_2(t *testing.T) {
 func TestNewQueueManager(t *testing.T) {
 	t.Skip()
 	qm := NewQueueManager("dj", func(msg string) {
+		fmt.Println("==", msg)
+	}, func(msg string) {
 		fmt.Println("==", msg)
 	})
 

@@ -464,3 +464,29 @@ func (c QueueController) Command(ctx echo.Context) error {
 		Message: msg,
 	})
 }
+
+// Queue command POST /tts/
+func (c QueueController) TTS(ctx echo.Context) error {
+
+	type ttsMessage struct {
+		Lang string `json:"lang"`
+		Msg  string `json:"msg"`
+	}
+
+	msg := ttsMessage{}
+
+	err := ctx.Bind(&msg)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, struct {
+			Error string `json:"error"`
+		}{Error: err.Error()})
+	}
+
+	c.jm.TextToSpeech(msg.Lang, msg.Msg)
+
+	return ctx.JSON(http.StatusOK, struct {
+		Message string `json:"message"`
+	}{
+		Message: "ok",
+	})
+}

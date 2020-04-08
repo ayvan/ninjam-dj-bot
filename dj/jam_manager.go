@@ -144,8 +144,7 @@ type JamManager struct {
 
 func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, chatBot JamChatBot) *JamManager {
 
-	sendMsgFunc := func(msg string) {
-		chatBot.SendMessage(msg)
+	sendVoiceMsgFunc := func(msg string) {
 		player.PlayText(config.Language.String(), msg)
 	}
 
@@ -153,7 +152,7 @@ func NewJamManager(jamDB tracks.JamTracksDB, player *JamPlayer, chatBot JamChatB
 		jamPlayer:    player,
 		jamDB:        jamDB,
 		jamChatBot:   chatBot,
-		queueManager: NewQueueManager(chatBot.UserName(), sendMsgFunc),
+		queueManager: NewQueueManager(chatBot.UserName(), chatBot.SendMessage, sendVoiceMsgFunc),
 	}
 	chatBot.SetOnUserinfoChange(jm.queueManager.OnUserinfoChange)
 	player.SetOnStop(jm.onStop)
@@ -405,6 +404,12 @@ func (jm *JamManager) Help() (msg string) {
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName(),
 		jm.jamChatBot.UserName())
+
+	return
+}
+
+func (jm *JamManager) TextToSpeech(lang, msg string) {
+	jm.jamPlayer.PlayText(lang, msg)
 
 	return
 }

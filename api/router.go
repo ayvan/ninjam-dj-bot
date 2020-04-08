@@ -50,6 +50,7 @@ func Run(hostAndPort string, jamManager *dj.JamManager) {
 	queueController := QueueController{jm: jamManager}
 	routes.GET("/queue/users", queueController.Users)
 	routes.POST("/queue/:command", queueController.Command)
+	routes.POST("/tts", queueController.TTS)
 
 	routes.GET("/test", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "ok"})
