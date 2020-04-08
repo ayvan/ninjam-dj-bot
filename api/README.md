@@ -498,3 +498,24 @@ Example 400 response:
   "error":"unable to recognize API command"
 }
 ```
+
+**POST /v1/tts/**
+
+HTTP codes:
+200
+400
+
+Example request:
+```json
+{
+  "lang":"ru_RU",
+  "message": "Превед! Кагдила?!"
+}
+```
+
+Example 200 response:
+```json
+{
+  "message": "ok"
+}
+```
