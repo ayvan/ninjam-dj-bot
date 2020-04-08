@@ -10,13 +10,19 @@ plugins:
   - pluginUri: http://calf.sourceforge.net/plugins/Compressor
     parameters:
       bypass: "0"
-      threshold: "linear(-25)"
+      threshold: "linear(-15)"
       ratio: "10"
       attack: "30"
       release: "150"
       makeup: "linear(30)"
       knee: "3"
       detection: "0"
+  - pluginUri: http://calf.sourceforge.net/plugins/Filter
+    parameters:
+      freq: "9000"
+      res: "0.707"
+      mode: "1"
+      inertia: "5"
   # limit your master!
   - pluginUri: http://gareus.org/oss/lv2/dpl#stereo
     parameters:
