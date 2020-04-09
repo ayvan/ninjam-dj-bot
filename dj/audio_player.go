@@ -492,6 +492,11 @@ func (jp *JamPlayer) OnServerConfigChange(bpm, bpi uint) {
 			jp.setBPI(jp.track.BPI)
 		}
 	}
+
+	if !jp.Playing() && !jp.bpmBPIOnSet {
+		jp.bpm = bpm
+		jp.bpi = bpi
+	}
 }
 
 func (jp *JamPlayer) PlayText(lang, text string) {
@@ -573,36 +578,66 @@ func (jp *JamPlayer) playVoice(b []byte) (err error) {
 	oggEncoder := ninjamencoder.NewEncoder()
 	oggEncoder.SampleRate = sampleRate
 
-	oggData, err := oggEncoder.EncodeNinjamInterval(deinterleavedSamples)
-	if err != nil {
-		logrus.Errorf("EncodeNinjamInterval error: %s", err)
-		return
+	intervalTime := (float64(time.Minute) / float64(jp.bpm)) * float64(jp.bpi)
+	intervalSamples := int(math.Ceil(float64(sampleRate) * intervalTime / float64(time.Second)))
+
+	if intervalSamples < 0 {
+		intervalSamples = 0
 	}
 
-	guid, _ := uuid.NewV1()
+	start := 0
+	end := intervalSamples
 
-	interval := AudioInterval{
-		GUID:         guid,
-		ChannelIndex: 1,
-		Flags:        0,
-		Data:         oggData,
-	}
+	for start < len(deinterleavedSamples[0]) {
 
-	jp.ninjamBot.IntervalBegin(interval.GUID, interval.ChannelIndex)
-
-	hasNext := true
-	for hasNext {
-		var intervalData []byte
-
-		intervalData, hasNext = interval.next()
-
-		if !hasNext {
-			interval.Flags = 1
+		if end > len(deinterleavedSamples[0]) {
+			end = len(deinterleavedSamples[0])
 		}
 
-		jp.ninjamBot.IntervalWrite(interval.GUID, intervalData, interval.Flags)
-	}
+		dataForOgg := make([][]float32, len(deinterleavedSamples))
 
+		for i, samples := range deinterleavedSamples {
+			logrus.Debugf("DS %d %d -> %d %d", intervalSamples, len(samples), start, end)
+			logrus.Debugf("BPM %d  BPI %d", jp.bpm, jp.bpi)
+			logrus.Debugf("sample rate %d", sampleRate)
+			dataForOgg[i] = samples[start:end]
+		}
+
+		var oggData [][]byte
+		oggData, err = oggEncoder.EncodeNinjamInterval(dataForOgg)
+		if err != nil {
+			logrus.Errorf("EncodeNinjamInterval error: %s", err)
+			return
+		}
+
+		start = end
+		end = start + intervalSamples
+
+		guid, _ := uuid.NewV1()
+
+		interval := AudioInterval{
+			GUID:         guid,
+			ChannelIndex: 1,
+			Flags:        0,
+			Data:         oggData,
+		}
+
+		jp.ninjamBot.IntervalBegin(interval.GUID, interval.ChannelIndex)
+
+		hasNext := true
+		for hasNext {
+			var intervalData []byte
+
+			intervalData, hasNext = interval.next()
+
+			if !hasNext {
+				interval.Flags = 1
+			}
+
+			jp.ninjamBot.IntervalWrite(interval.GUID, intervalData, interval.Flags)
+		}
+		time.Sleep(time.Duration(intervalTime) - time.Millisecond)
+	}
 	return nil
 }
 
