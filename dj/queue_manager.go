@@ -246,7 +246,9 @@ func (qm *QueueManager) Del(userName string) bool {
 				// если текущий юзер и есть выбывший - сразу переключаем
 				qm.userStartTime = nil
 				qm.userStartsPlaying = nil
-				qm.start(0)
+				if !qm.stopped {
+					qm.start(0)
+				}
 			}
 
 			return true
