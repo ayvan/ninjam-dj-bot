@@ -7,8 +7,6 @@ github.com/VividCortex/godaemon v0.0.0-20200629145737-581b70a8a603/go.mod h1:Y8C
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
 github.com/ayvan/ninjam-chatbot v0.0.0-20200412164552-b79e594477c2 h1:zMWyi+wHjmUCRr5nw+bGqziAgs1iAJET/tenb36SRRM=
 github.com/ayvan/ninjam-chatbot v0.0.0-20200412164552-b79e594477c2/go.mod h1:yIIM5/vHQ5J155TAicCgRZxYnF49ufgDmZ4L+IrlmZs=
-github.com/ayvan/ninjam-dj-bot v0.0.0-20200711125303-fef9e5ff754b h1:1fXutjMu+LDk1VJecRkBbQlAO0wJDX65a0MJjSThje4=
-github.com/ayvan/ninjam-dj-bot v0.0.0-20200711125303-fef9e5ff754b/go.mod h1:wWZ4bj91yXma4NnTbHdYiahO0xjnYHcopgLTr6ItDFg=
 github.com/azul3d/engine v0.0.0-20180624221640-25c8eab2d474 h1:wYEdiEOScBNtoyzGq00VYjzanx8yCwr6IK/tsvs/Ql4=
 github.com/azul3d/engine v0.0.0-20180624221640-25c8eab2d474/go.mod h1:XJaK+eQA5QZRq/Y8jYtJnUGhqAfHxG3z2PgwiHvE2BA=
 github.com/bogem/id3v2 v1.2.0 h1:hKDF+F1gOgQ5r1QmBCEZUk4MveJbKxCeIDSBU7CQ4oI=
@@ -96,7 +94,6 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190312061237-fead79001313/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20190422165155-953cdadca894 h1:Cz4ceDQGXuKRnVBDTS23GTn/pU5OE2C0WrNTOYK1Uuc=
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
