@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/VividCortex/godaemon v0.0.0-20201030185937-6073f6ce8f76
-	github.com/ayvan/ninjam-chatbot v1.1.1
+	github.com/ayvan/ninjam-chatbot v1.1.2
 	github.com/azul3d/engine v0.0.0-20180624221640-25c8eab2d474
 	github.com/bogem/id3v2 v1.2.0
 	github.com/burillo-se/bs1770wrap v0.0.0-20190211220104-433cf74378a3
